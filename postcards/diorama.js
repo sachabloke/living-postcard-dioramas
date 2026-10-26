@@ -360,19 +360,23 @@ function makeLeaves(b) {
 }
 // wind-blown spray: white mist torn off the water and flung downwind; the sea sheds it at moderate wind, lakes only in strong wind
 function makeSpray() {
-  const N = 320, geo = new THREE.BufferGeometry(), pos = new Float32Array(N * 3).fill(-999), tex = softTexture('dot');
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const mat = new THREE.PointsMaterial({ size: 0.65, map: tex, transparent: true, opacity: 0.55, depthWrite: false, color: 0xeef6ff, sizeAttenuation: true }), pts = new THREE.Points(geo, mat); pts.frustumCulled = false;
+  const N = 900, geo = new THREE.BufferGeometry(), pos = new Float32Array(N * 3).fill(-999), tex = softTexture('dot');
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const mat = new THREE.PointsMaterial({ size: 0.9, map: tex, transparent: true, opacity: 0.55, depthWrite: false, color: 0xeef6ff, sizeAttenuation: true }), pts = new THREE.Points(geo, mat); pts.frustumCulled = false;
   const V = new Float32Array(N * 3), L = new Float32Array(N);
   return { pts, update(dt, t, wE, tg) {
     const sea = S.b && S.b.relief.style === 'sea', k = sea ? Math.max(0, (wE - 0.3) / 0.7) : Math.max(0, (wE - 0.6) / 0.4) * 0.6, want = Math.floor(N * Math.min(1, k)); pts.visible = want > 0; mat.opacity = 0.5 + 0.4 * Math.min(1, k); if (!want) return; const wd = windDirNow;
     for (let i = 0; i < N; i++) { if (i >= want) { pos[i * 3 + 1] = -999; continue; }
-      if (L[i] <= 0) { let ok = false; for (let a = 0; a < 8 && !ok; a++) { const ang = Math.random() * 6.283, r = 2 + Math.random() * 20, x = tg.x + Math.cos(ang) * r, z = tg.z + Math.sin(ang) * r; if (S.H(x, z) < -0.3) { pos[i * 3] = x; pos[i * 3 + 2] = z; pos[i * 3 + 1] = (sea ? 0.35 : 0.12) + Math.random() * (sea ? 0.7 : 0.2); const sp = (2 + 7 * wE) * (0.5 + 1.0 * gustJS(x, z, t)); V[i * 3] = wd.x * sp; V[i * 3 + 2] = wd.y * sp; V[i * 3 + 1] = 0.3 + Math.random() * 0.8; L[i] = 0.5 + Math.random() * 0.9; ok = true; } } if (!ok) { pos[i * 3 + 1] = -999; L[i] = 0.1; continue; } }
+      if (L[i] <= 0) { let ok = false; for (let a = 0; a < 8 && !ok; a++) { const ang = Math.random() * 6.283, r = 2 + Math.random() * 28, x = tg.x + Math.cos(ang) * r, z = tg.z + Math.sin(ang) * r; if (S.H(x, z) < -0.3) { pos[i * 3] = x; pos[i * 3 + 2] = z; pos[i * 3 + 1] = (sea ? 0.35 : 0.12) + Math.random() * (sea ? 0.7 : 0.2); const sp = (2 + 7 * wE) * (0.5 + 1.0 * gustJS(x, z, t)); V[i * 3] = wd.x * sp; V[i * 3 + 2] = wd.y * sp; V[i * 3 + 1] = 0.3 + Math.random() * 0.8; L[i] = 0.5 + Math.random() * 0.9; ok = true; } } if (!ok) { pos[i * 3 + 1] = -999; L[i] = 0.1; continue; } }
       L[i] -= dt; pos[i * 3] += V[i * 3] * dt; pos[i * 3 + 2] += V[i * 3 + 2] * dt; V[i * 3 + 1] -= 1.8 * dt; pos[i * 3 + 1] += V[i * 3 + 1] * dt; if (pos[i * 3 + 1] < 0.02) L[i] = 0; }
     geo.attributes.position.needsUpdate = true; } };
 }
 function windTick(dt, wE) {
   if (S.fx && (S.fx.state === 'float' || S.fx.state === 'bite') && S.fx.pos) WU.uBob.value.set(S.fx.pos.x, S.fx.pos.z, S.fx.state === 'bite' ? 1.6 : 1); else WU.uBob.value.z = 0;
   if (S.spray) S.spray.update(dt, S.t, wE, S.target);
+  /* boats afloat: heel and pitch with the gusts, heave on the chop, and ride downwind to the end of their mooring */
+  if (S.placed) for (const p of S.placed) { if (!/boat/.test(p.m) || S.H(p.x, p.z) > -0.15) continue; const o = p.obj, g = gustJS(p.x, p.z, S.t), k = 0.25 + 1.4 * wE, ph = p.x * 0.7 + p.z * 0.5; if (p.bx === undefined) { p.bx = o.position.x; p.bz = o.position.z; p.by = o.position.y; p.br = o.rotation.clone(); }
+    const wd = windDirNow, sw = S.t * (1.2 + wE); o.position.set(p.bx + wd.x * (0.1 + 0.5 * wE) * (0.6 + g), p.by + Math.sin(sw + ph) * 0.05 * k + Math.sin(sw * 1.7 + ph * 2) * 0.03 * k, p.bz + wd.y * (0.1 + 0.5 * wE) * (0.6 + g));
+    o.rotation.set(p.br.x + Math.sin(sw * 0.9 + ph) * 0.05 * k + wd.y * g * 0.04 * wE, p.br.y + Math.sin(sw * 0.4 + ph) * 0.03 * wE, p.br.z + Math.sin(sw * 1.1 + ph * 1.3) * 0.07 * k - wd.x * g * 0.05 * wE); }
   const a = 0.6 + 0.22 * Math.sin(S.t * 0.05) + 0.1 * Math.sin(S.t * 0.13); WU.uWT.value += dt * (0.45 + 1.1 * Math.min(1.5, wE)); windDirNow.set(Math.cos(a), Math.sin(a)); uWindDir.value.copy(windDirNow); WU.uWDir.value.copy(windDirNow);
   if (S.leaves) S.leaves.update(dt, S.t, wE, S.target);
   { const ar = $('windarrow'); if (ar) { const sy = Math.sin(S.yaw), cy = Math.cos(S.yaw), sx = windDirNow.x * cy - windDirNow.y * sy, up = -windDirNow.x * sy - windDirNow.y * cy; ar.style.transform = `rotate(${(Math.atan2(-up, sx) * 180 / Math.PI).toFixed(0)}deg)`; ar.style.opacity = 0.35 + 0.65 * Math.min(1, wE); } }   // the arrow points the way the wind blows, as seen from the camera
