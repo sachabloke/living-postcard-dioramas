@@ -28,6 +28,7 @@
   body.walking #stick { display:block; }
   #walkbtn { position:fixed; right:10px; top:58px; z-index:5; opacity:.55; } body.clean #walkbtn { opacity:.3; } body.walking #walkbtn { opacity:.9; background:var(--paper); color:var(--ink); }
   #stormbtn { position:fixed; right:10px; top:106px; z-index:5; opacity:.55; } #windbtn { position:fixed; right:10px; top:154px; z-index:5; opacity:.55; } body.windy #windbtn { opacity:.95; background:#dff3dc; color:#16301a; } body.clean #windbtn { opacity:.3; } body.windy.clean #windbtn { opacity:.8; }
+  #coldbtn { position:fixed; right:10px; top:250px; z-index:5; opacity:.55; } body.cold #coldbtn { opacity:.95; background:#e3f1ff; color:#102a44; } body.clean #coldbtn { opacity:.3; } body.cold.clean #coldbtn { opacity:.8; }
   #sndbtn { position:fixed; right:10px; top:202px; z-index:5; opacity:.55; display:none; } body.stormy #sndbtn, body.windy #sndbtn { display:block; } body.stormy #stormbtn { opacity:.95; background:#d8e4ff; color:#14202e; } body.clean #stormbtn { opacity:.3; } body.stormy.clean #stormbtn { opacity:.8; }
   #flash { position:fixed; inset:0; background:#eef2ff; opacity:0; pointer-events:none; z-index:3; mix-blend-mode:screen; } #stormlab { display:none; } body.stormy #stormlab { display:inline; }
   @media (max-width:640px) { #cap { bottom:128px; } }
@@ -40,9 +41,9 @@
 <div id="bar">
   <span id="clock"></span><input id="time" type="range" min="0" max="1" step="0.005" value="0.5" aria-label="Time of day">
   <span id="wx"><button data-w="default">Its own</button><button data-w="clear">Clear</button><button data-w="cloudy">Cloudy</button><button data-w="fog">Fog</button><button data-w="rain">Rain</button><button data-w="snow">Snow</button><button data-w="storm">Storm</button></span>
-  <label>🍃 <input id="wind" type="range" min="0" max="1" step="0.05" value="0.3" aria-label="Wind"></label> <label id="stormlab">⚡ <input id="storm" type="range" min="0.2" max="1" step="0.05" value="0.7" aria-label="Storm intensity"></label> <label><input id="spin" type="checkbox" checked> turn</label><button id="save">Save postcard</button>
+  <label>🍃 <input id="wind" type="range" min="0" max="1" step="0.05" value="0.3" aria-label="Wind"></label> <label>❄ <input id="cold" type="range" min="0" max="1" step="0.05" value="0" aria-label="Cold"></label> <label id="stormlab">⚡ <input id="storm" type="range" min="0.2" max="1" step="0.05" value="0.7" aria-label="Storm intensity"></label> <label><input id="spin" type="checkbox" checked> turn</label><button id="save">Save postcard</button>
 </div>
-<button id="uibtn" aria-label="Show or hide the menus">☰</button><button id="walkbtn">Walk</button><button id="stormbtn" aria-label="Thunderstorm, tap to raise the intensity">⚡</button><button id="windbtn" aria-label="Wind, tap to raise it">🍃 <span id="windarrow" style="display:inline-block">➤</span></button><button id="sndbtn" aria-label="Storm sound">🔊</button><div id="flash"></div><div id="stick"><i></i></div>
+<button id="uibtn" aria-label="Show or hide the menus">☰</button><button id="walkbtn">Walk</button><button id="stormbtn" aria-label="Thunderstorm, tap to raise the intensity">⚡</button><button id="windbtn" aria-label="Wind, tap to raise it">🍃 <span id="windarrow" style="display:inline-block">➤</span></button><button id="coldbtn" aria-label="Cold, tap to raise it">❄</button><button id="sndbtn" aria-label="Storm sound">🔊</button><div id="flash"></div><div id="stick"><i></i></div>
 <div id="loading">Loading the postcard…</div>
 <script type="module" src="./diorama.js"></script>
 </body>
