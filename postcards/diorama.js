@@ -140,9 +140,15 @@ function buildWater(b, H) {
   const dep = []; for (let k = 0; k < pos.length; k += 3) dep.push(Math.max(0, -H(pos[k], pos[k + 2])));   // water depth, drives the shore foam
   const g = new THREE.BufferGeometry(); g.setAttribute('aDepth', new THREE.Float32BufferAttribute(dep, 1)); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 4)); g.setIndex(idx); g.computeVertexNormals();
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, roughness: 0.08, metalness: 0.2, depthWrite: false, side: THREE.DoubleSide });
-  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky; uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
-  vec2 q = vWP.xz; float T = uTime; float ch = 0.55 + 0.45 * uWindW;
+  const isSea = b.relief.style === 'sea', SWELL = `
+  // polish v1: big swell for the sea (zero on lakes); height H and its slope G at world xz, faded out toward the shore by water depth
+  vec3 swell(vec2 p, float t, float dep) { float f = smoothstep(0.15, 2.2, dep); vec2 d1 = normalize(vec2(1.0, 0.3)), d2 = normalize(vec2(-0.5, 1.0)), d3 = normalize(vec2(0.7, -0.6)), d4 = normalize(vec2(-0.2, -1.0));
+    float a1 = dot(p, d1) * 0.22 + t * 0.85, a2 = dot(p, d2) * 0.37 - t * 1.05, a3 = dot(p, d3) * 0.66 + t * 1.4, a4 = dot(p, d4) * 1.05 - t * 1.8;
+    float h = 0.75 * sin(a1) + 0.4 * sin(a2) + 0.2 * sin(a3) + 0.09 * sin(a4); vec2 g = d1 * 0.75 * 0.22 * cos(a1) + d2 * 0.4 * 0.37 * cos(a2) + d3 * 0.2 * 0.66 * cos(a3) + d4 * 0.09 * 1.05 * cos(a4); return vec3(h * f, g * f); }
+`;
+  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; uniform float uTime; uniform float uSea;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vH = 0.0; if (uSea > 0.5) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uTime, aDepth); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; uniform float uSea; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
+  vec2 q = vWP.xz; float T = uTime; float ch = (0.55 + 0.45 * uWindW) * (1.0 + 1.3 * uSea);
   // wave normal: five travelling waves (long swell to short chop) plus fine ripple; amplitude follows the wind
   vec2 g = vec2(0.0);
   { vec2 d1 = normalize(vec2(1.0, 0.35)); float f1 = dot(q, d1) * 0.55 + T * 0.9; g += d1 * cos(f1) * 0.55 * 0.5 * ch;
@@ -150,26 +156,28 @@ function buildWater(b, H) {
     vec2 d3 = normalize(vec2(0.8, -0.7)); float f3 = dot(q, d3) * 1.7 + T * 1.5; g += d3 * cos(f3) * 1.7 * 0.12 * ch;
     vec2 d4 = normalize(vec2(-0.9, -0.3)); float f4 = dot(q, d4) * 3.1 - T * 2.0; g += d4 * cos(f4) * 3.1 * 0.05 * uWindW;
     vec2 d5 = normalize(vec2(0.2, 0.95)); float f5 = dot(q, d5) * 5.6 + T * 2.6; g += d5 * cos(f5) * 5.6 * 0.022 * uWindW; }
+  if (uSea > 0.5) g += swell(q, T, vDep).yz;
   // rain rings: a jittered grid of expanding circles
   float ringH = 0.0;
   if (uRain > 0.02) { for (int k = 0; k < 2; k++) { vec2 c = q * (1.5 + float(k) * 0.8) + float(k) * 17.0; vec2 id = floor(c), f = fract(c) - 0.5; float h1 = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5), h2 = fract(sin(dot(id, vec2(269.5, 183.3))) * 43758.5); vec2 o = (vec2(h1, h2) - 0.5) * 0.6; float ph = fract(T * (0.7 + 0.5 * h1) + h2); float rr = length(f - o), rad = ph * 0.5; float ring = exp(-pow((rr - rad) * 22.0, 2.0)) * (1.0 - ph) * step(h1, uRain * 0.9); g += normalize(f - o + 1e-4) * ring * 0.9; ringH += ring; } }
   vec3 N = normalize(vec3(-g.x, 1.0, -g.y)); vec3 V = normalize(cameraPosition - vWP);
   float fr = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 3.0);
   vec4 rc = uTexMat * vec4(vWP, 1.0); vec3 refl = texture2D(uRefl, rc.xy / rc.w + g * 0.035 * (0.4 + 0.6 * V.y)).rgb;
-  float rk = uReflAmt * (0.22 + 0.7 * fr) * (0.5 + 0.5 * clamp(diffuseColor.a * 1.6, 0.0, 1.0)); outgoingLight = mix(outgoingLight, refl, rk);
-  outgoingLight = mix(outgoingLight, uSky, fr * 0.7 * (1.0 - uReflAmt * 0.6));
+  float rk = uReflAmt * (0.22 + 0.7 * fr) * (1.0 - 0.4 * uSea) * (0.5 + 0.5 * clamp(diffuseColor.a * 1.6, 0.0, 1.0)); outgoingLight = mix(outgoingLight, refl, rk);
+  outgoingLight = mix(outgoingLight, uSky, fr * 0.7 * (1.0 - uReflAmt * 0.6) * (1.0 - 0.5 * uSea));
   // sun glitter: reflected sun direction against the wave normals (broad sheen + sharp sparkle)
   vec3 Rv = reflect(-normalize(uSunDir), N); float sd = max(dot(Rv, V), 0.0);
   outgoingLight += uSun * (pow(sd, 60.0) * 0.5 + pow(sd, 600.0) * 3.0) * uGlint * uWFx;
   outgoingLight += uSky * 0.12 * smoothstep(0.35, 0.9, length(g)) * uWFx + vec3(0.8, 0.9, 1.0) * ringH * 0.10 * uWFx;
   // shore foam: a lapping band where the water is shallow, broken up by noise, plus foam streaks on windy crests
-  float lap = 0.12 + 0.08 * sin(T * 0.9 + q.x * 0.6 + q.y * 0.4), nz = 0.5 + 0.5 * sin(q.x * 9.0 + T * 0.8) * sin(q.y * 8.0 - T * 0.7);
+  float lap = (0.12 + 0.08 * sin(T * 0.9 + q.x * 0.6 + q.y * 0.4)) * (1.0 + uSea * (2.5 + 2.0 * sin(T * 0.75 + q.x * 0.25 + q.y * 0.18))), nz = clamp(0.5 + 0.3 * sin(dot(q, vec2(2.3, 1.1)) + T * 0.6 + 2.0 * sin(q.y * 0.9)) + 0.25 * sin(dot(q, vec2(-1.3, 3.7)) - T * 0.8 + sin(q.x * 1.3)) + 0.2 * sin(dot(q, vec2(5.1, -2.9)) + T), 0.0, 1.0);   // non-grid noise (a product of sines made a checkerboard)
   float foam = (1.0 - smoothstep(lap * 0.35, lap + 0.1, vDep)) * smoothstep(0.0, 0.03, vDep) * (0.55 + 0.45 * nz);
   foam = max(foam, smoothstep(0.62, 0.95, length(g)) * uWindW * 0.35 * nz);
+  foam = max(foam, uSea * smoothstep(0.78, 1.05, vH + 0.12 * nz * uWindW) * 0.8 * (0.5 + 0.5 * nz));   // whitecaps on the biggest crests
   outgoingLight = mix(outgoingLight, vec3(0.93, 0.97, 0.98) * (0.6 + 0.4 * uWFx), clamp(foam, 0.0, 0.85));
   gl_FragColor = vec4(outgoingLight, clamp(diffuseColor.a + fr * 0.45 + foam * 0.6, 0.0, 1.0));`); };
-  const w = new THREE.Mesh(g, mat); w.receiveShadow = true; w.renderOrder = 2;
-  if (b.relief.style === 'sea') { const og = new THREE.RingGeometry(RW - 1, 700, 96, 1); og.rotateX(-Math.PI / 2); const n = og.attributes.position.count, oc = new Float32Array(n * 4); for (let i = 0; i < n; i++) oc.set([...deep, 0.9], i * 4); og.setAttribute('color', new THREE.BufferAttribute(oc, 4)); const ow = new THREE.Mesh(og, mat); ow.renderOrder = 2; w.add(ow); }   // polish v1: the open sea continues past the 95 m disc, so there is no hard edge at the horizon
+  const w = new THREE.Mesh(g, mat); w.receiveShadow = !isSea;   /* displaced sea would show shadow acne */ w.renderOrder = 2;
+  if (b.relief.style === 'sea') { const og = new THREE.RingGeometry(RW - 1, 700, 96, 1); og.rotateX(-Math.PI / 2); const n = og.attributes.position.count, oc = new Float32Array(n * 4); for (let i = 0; i < n; i++) oc.set([...deep, 0.9], i * 4); og.setAttribute('color', new THREE.BufferAttribute(oc, 4)); og.setAttribute('aDepth', new THREE.Float32BufferAttribute(new Float32Array(n).fill(6), 1)); const ow = new THREE.Mesh(og, mat); ow.renderOrder = 2; w.add(ow); }   // polish v1: the open sea continues past the 95 m disc, so there is no hard edge at the horizon
   return w;
 }
 
