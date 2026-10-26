@@ -109,7 +109,7 @@ const PUSH = { value: Array.from({ length: 12 }, () => new THREE.Vector3()) };  
 const SOFT = /flower|grass|clover|fern|reed|weed|mushroom/i, _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion(), _ax = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 function bendSoft(dt) {   // flowers and tufts lean away from the avatar and spring back
   const av = S.avatar, ax = av.position.x, az = av.position.z; if (S.softFor !== S.placed) { S.softFor = S.placed; S.soft = S.placed.filter(p => SOFT.test(p.m)); for (const p of S.soft) { p.ln = 0; p.lx = 0; p.lz = 0; } }
-  for (const p of S.soft) { const dx = p.x - ax, dz = p.z - az, d = Math.hypot(dx, dz), want = d < 1.4 ? (1 - d / 1.4) * 1.05 : 0, rate = Math.min(1, dt * (want > p.ln ? 9 : 1.6)), k = d > 1e-4 ? 1 / d : 0;
+  for (const p of S.soft) { const dx = p.x - ax, dz = p.z - az, d = Math.hypot(dx, dz), want = d < 1.2 ? (1 - d / 1.2) * 0.22 : 0, rate = Math.min(1, dt * (want > p.ln ? 7 : 2.5)), k = d > 1e-4 ? 1 / d : 0;
     if (want > p.ln) { p.lx = dx * k; p.lz = dz * k; } p.ln += (want - p.ln) * rate; if (p.ln < 0.004 && !want) { if (p.ln) { p.ln = 0; p.obj.quaternion.setFromAxisAngle(_up, p.rot); } continue; }
     _ax.set(p.lz, 0, -p.lx); _qa.setFromAxisAngle(_ax, p.ln); _qb.setFromAxisAngle(_up, p.rot); p.obj.quaternion.copy(_qa).multiply(_qb); } }
 function pushTick(dt) {
@@ -117,7 +117,7 @@ function pushTick(dt) {
   const av = S.avatar, P = PUSH.value; if (!av) return; const tr = S.trail || (S.trail = []), x = av.position.x, z = av.position.z, l = tr[0];
   if (!l || Math.hypot(l.x - x, l.z - z) > 0.3) { tr.unshift({ x, z, age: 0 }); if (tr.length > 11) tr.pop(); }
   for (const q of tr) q.age += dt;
-  P[0].set(x, z, 1); for (let i = 1; i < 12; i++) { const q = tr[i - 1]; if (q) P[i].set(q.x, q.z, Math.max(0, 1 - q.age / 7) * 0.8); else P[i].z = 0; }
+  P[0].set(x, z, 1); for (let i = 1; i < 12; i++) { const q = tr[i - 1]; if (q) P[i].set(q.x, q.z, Math.max(0, 1 - q.age / 2.5) * 0.7); else P[i].z = 0; }
 }
 function buildGrass(b, H, hasWater, avoid) {
   const g = b.ground, A = rgb(g.a), B = rgb(g.b), rng = makeRng(b.seed * 13 + 3), pos = [], cl = [], uv = [];
@@ -132,7 +132,7 @@ function buildGrass(b, H, hasWater, avoid) {
 { vec3 ip = vec3(instanceMatrix[3][0], 0.0, instanceMatrix[3][2]); float ph = ip.x * 0.7 + ip.z * 0.5; vec2 wd = normalize(uWindDir); float gu = gustAt(ip.xz, wd, uTime), w = uWind * (0.55 + 1.0 * gu);   // grass leans downwind and ripples as gust fronts pass
   vec3 dl = normalize(transpose(mat3(instanceMatrix)) * vec3(wd.x, 0.0, wd.y) + vec3(1e-5)); vec3 pl = vec3(-dl.z, 0.0, dl.x);
   transformed += dl * aTip * 0.075 * w * (1.0 + 0.35 * sin(uTime * 1.8 + ph)) + pl * aTip * 0.04 * w * cos(uTime * 1.35 + ph * 1.3); transformed.y -= aTip * aTip * 0.012 * w * w;
-  for (int i = 0; i < 12; i++) { vec3 pu = uPush[i]; if (pu.z > 0.001) { vec2 dd = ip.xz - pu.xy; float rr = length(dd), f = pu.z * (1.0 - smoothstep(0.1, 1.1, rr)); if (f > 0.001) { vec2 dn = dd / (rr + 0.04); vec3 pl2 = normalize(transpose(mat3(instanceMatrix)) * vec3(dn.x, 0.0, dn.y) + vec3(1e-5)); transformed += pl2 * aTip * 0.8 * f; transformed.y -= aTip * 0.4 * f; } } } }   // walking presses the grass aside, footprints spring back over ~7 s
+  for (int i = 0; i < 12; i++) { vec3 pu = uPush[i]; if (pu.z > 0.001) { vec2 dd = ip.xz - pu.xy; float rr = length(dd), f = pu.z * (1.0 - smoothstep(0.1, 0.7, rr)); if (f > 0.001) { vec2 dn = dd / (rr + 0.04); vec3 pl2 = normalize(transpose(mat3(instanceMatrix)) * vec3(dn.x, 0.0, dn.y) + vec3(1e-5)); transformed += pl2 * aTip * 0.14 * f; transformed.y -= aTip * 0.03 * f; } } } }   // walking presses the grass aside, footprints spring back over ~7 s
 `); };
   const N = Math.round(26000 * (1 - (g.snow || 0) * 0.75)), mesh = new THREE.InstancedMesh(geo, mat, N), d = new THREE.Object3D(), c = new THREE.Color(); let n = 0;
   for (let t = 0; t < N * 4 && n < N; t++) {
