@@ -137,7 +137,7 @@ function buildFarTrees(b, H, hasWater) {
   mesh.count = n; mesh.frustumCulled = false; return mesh;
 }
 
-const WU = { uSky: { value: new THREE.Color(0x9fc4e0) }, uSun: { value: new THREE.Color(0xfff0c0) }, uGlint: { value: 1 }, uRefl: { value: null }, uTexMat: { value: new THREE.Matrix4() }, uReflAmt: { value: 0 }, uSunDir: { value: new THREE.Vector3(0.4, 0.8, 0.3) }, uRain: { value: 0 }, uWindW: { value: 1 }, uWFx: { value: 1 }, uStorm: { value: 0 }, uWDir: { value: new THREE.Vector2(0.8, 0.6) } };   // polish v1: planar reflection (render target + texture matrix, filled in tick)
+const WU = { uSky: { value: new THREE.Color(0x9fc4e0) }, uSun: { value: new THREE.Color(0xfff0c0) }, uGlint: { value: 1 }, uRefl: { value: null }, uTexMat: { value: new THREE.Matrix4() }, uReflAmt: { value: 0 }, uSunDir: { value: new THREE.Vector3(0.4, 0.8, 0.3) }, uRain: { value: 0 }, uWindW: { value: 1 }, uWFx: { value: 1 }, uStorm: { value: 0 }, uWDir: { value: new THREE.Vector2(0.8, 0.6) }, uWT: { value: 0 } };   // uWT: wave clock that runs faster in more wind   // polish v1: planar reflection (render target + texture matrix, filled in tick)
 function buildWater(b, H) {
   const rings = 80, segs = 160, pos = [], col = [], idx = [], deep = rgb(b.relief.style === 'marsh' ? 0x2c4a52 : b.relief.style === 'sea' ? 0x2b86a0 : 0x1f5f7a), shallow = rgb(b.relief.style === 'marsh' ? 0x7aa39b : 0x6fc2c0);
   for (let i = 0; i <= rings; i++) for (let j = 0; j <= segs; j++) { const r = ringR(i, rings), a = j / segs * Math.PI * 2, x = Math.cos(a) * r, z = Math.sin(a) * r, d = Math.max(0, -H(x, z)); pos.push(x, 0, z); const t = sstep(0, 1.2, d), c = mix3(shallow, deep, t); col.push(...c, d < 0.01 ? 0 : 0.35 + 0.55 * sstep(0, 0.5, d)); }
@@ -155,7 +155,7 @@ function buildWater(b, H) {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, roughness: 0.08, metalness: 0.2, depthWrite: false, side: THREE.DoubleSide });
   const isSea = b.relief.style === 'sea', SWELL = `
   // polish v1: big swell for the sea (zero on lakes); height H and its slope G at world xz, faded out toward the shore by water depth
-  vec3 swell(vec2 p, float t, float dep, float dist, vec2 gr) { float f = smoothstep(0.15, 2.2, dep); vec2 d1 = normalize(vec2(1.0, 0.3)), d2 = normalize(vec2(-0.5, 1.0)), d3 = normalize(vec2(0.7, -0.6)), d4 = normalize(vec2(-0.2, -1.0));
+  vec3 swell(vec2 p, float t, float dep, float dist, vec2 gr) { float f = smoothstep(0.15, 2.2, dep); vec2 wd0 = normalize(uWDir + vec2(1e-4)), pr0 = vec2(-wd0.y, wd0.x), d1 = wd0, d2 = normalize(wd0 * 0.85 + pr0 * 0.5), d3 = normalize(wd0 * 0.85 - pr0 * 0.5), d4 = normalize(wd0 * 0.6 + pr0 * 0.8);   // swell and chop all run with the wind
     float a1 = dot(p, d1) * 0.22 + t * 0.85, a2 = dot(p, d2) * 0.37 - t * 1.05, a3 = dot(p, d3) * 0.66 + t * 1.4, a4 = dot(p, d4) * 1.05 - t * 1.8;
     float h = 0.75 * sin(a1) + 0.4 * sin(a2) + 0.2 * sin(a3) + 0.09 * sin(a4); vec2 g = d1 * 0.75 * 0.22 * cos(a1) + d2 * 0.4 * 0.37 * cos(a2) + d3 * 0.2 * 0.66 * cos(a3) + d4 * 0.09 * 1.05 * cos(a4); vec3 r = vec3(h * f, g * f);
     r *= 1.0 + 0.9 * uStorm;
@@ -167,18 +167,18 @@ function buildWater(b, H) {
     return r; }
   float surfS(float dist, float t) { return 0.5 + 0.5 * sin(dist * 0.78 + t * 1.55); }
 `;
-  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.uniforms.uSurf = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; attribute float aDist; attribute vec2 aGr; uniform float uTime; uniform float uSea; uniform float uSurf; uniform float uStorm;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vDist = aDist; vGr = aGr; vH = 0.0; if (uSea > 0.5) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uTime, aDepth, aDist, aGr); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; uniform vec2 uWDir; uniform float uStorm; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
+  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.uniforms.uSurf = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; attribute float aDist; attribute vec2 aGr; uniform vec2 uWDir; uniform float uWT; uniform float uTime; uniform float uSea; uniform float uSurf; uniform float uStorm;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vDist = aDist; vGr = aGr; vH = 0.0; if (uSea > 0.5) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uWT, aDepth, aDist, aGr); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; uniform vec2 uWDir; uniform float uWT; uniform float uStorm; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
   vec2 q = vWP.xz; float T = uTime; float gustW = 0.5 + 0.5 * sin(dot(q, normalize(uWDir)) * 0.11 - T * 1.5 + 1.3 * sin(dot(q, vec2(-uWDir.y, uWDir.x)) * 0.07)); gustW *= gustW;   // the same gust front that bends the trees; it ruffles the water as it passes
-  float ch = (0.55 + 0.45 * uWindW) * (1.0 + 1.3 * uSea) * (1.0 + 0.8 * uStorm) * (0.8 + 0.6 * gustW);
+  float w01 = clamp(uWindW - 0.5, 0.0, 1.5), W = uWT; float ch = (0.3 + 0.9 * w01) * (1.0 + 1.3 * uSea) * (1.0 + 0.8 * uStorm) * (0.7 + 0.8 * gustW);   // calm water is nearly still; more wind, bigger chop, and the gust fronts ruffle it
   // wave normal: five travelling waves (long swell to short chop) plus fine ripple; amplitude follows the wind
   vec2 g = vec2(0.0);
-  { vec2 d1 = normalize(vec2(1.0, 0.35)); float f1 = dot(q, d1) * 0.55 + T * 0.9; g += d1 * cos(f1) * 0.55 * 0.5 * ch;
-    vec2 d2 = normalize(vec2(-0.4, 1.0)); float f2 = dot(q, d2) * 0.95 - T * 1.15; g += d2 * cos(f2) * 0.95 * 0.28 * ch;
-    vec2 d3 = normalize(uWDir + vec2(0.001)); float f3 = dot(q, d3) * 1.7 + T * 1.5; g += d3 * cos(f3) * 1.7 * 0.12 * ch;
-    vec2 d4 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.45); float f4 = dot(q, d4) * 3.1 - T * 2.0; g += d4 * cos(f4) * 3.1 * 0.05 * uWindW;
-    vec2 d5 = normalize(uWDir - vec2(-uWDir.y, uWDir.x) * 0.5); float f5 = dot(q, d5) * 5.6 + T * 2.6; g += d5 * cos(f5) * 5.6 * 0.022 * uWindW; }
-  if (uSea > 0.5) g += swell(q, T, vDep, vDist, vGr).yz;
+  { vec2 d1 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.2); float f1 = dot(q, d1) * 0.55 + W * 0.9; g += d1 * cos(f1) * 0.55 * 0.5 * ch;
+    vec2 d2 = normalize(uWDir - vec2(-uWDir.y, uWDir.x) * 0.35); float f2 = dot(q, d2) * 0.95 - W * 1.15; g += d2 * cos(f2) * 0.95 * 0.28 * ch;
+    vec2 d3 = normalize(uWDir + vec2(0.001)); float f3 = dot(q, d3) * 1.7 + W * 1.5; g += d3 * cos(f3) * 1.7 * 0.12 * ch;
+    vec2 d4 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.45); float f4 = dot(q, d4) * 3.1 - W * 2.0; g += d4 * cos(f4) * 3.1 * 0.05 * (0.15 + w01) * (0.5 + 1.0 * gustW);
+    vec2 d5 = normalize(uWDir - vec2(-uWDir.y, uWDir.x) * 0.5); float f5 = dot(q, d5) * 5.6 + W * 2.6; g += d5 * cos(f5) * 5.6 * 0.022 * (0.1 + w01) * (0.3 + 1.6 * gustW); }
+  if (uSea > 0.5) g += swell(q, uWT, vDep, vDist, vGr).yz;
   // rain rings: a jittered grid of expanding circles
   float ringH = 0.0;
   if (uRain > 0.02) { for (int k = 0; k < 2; k++) { vec2 c = q * (1.5 + float(k) * 0.8) + float(k) * 17.0; vec2 id = floor(c), f = fract(c) - 0.5; float h1 = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5), h2 = fract(sin(dot(id, vec2(269.5, 183.3))) * 43758.5); vec2 o = (vec2(h1, h2) - 0.5) * 0.6; float ph = fract(T * (0.7 + 0.5 * h1) + h2); float rr = length(f - o), rad = ph * 0.5; float ring = exp(-pow((rr - rad) * 22.0, 2.0)) * (1.0 - ph) * step(h1, uRain * 0.9); g += normalize(f - o + 1e-4) * ring * 0.9; ringH += ring; } }
@@ -342,7 +342,7 @@ function makeLeaves(b) {
     mesh.instanceMatrix.needsUpdate = true; } };
 }
 function windTick(dt, wE) {
-  const a = 0.6 + 0.35 * Math.sin(S.t * 0.07) + 0.2 * Math.sin(S.t * 0.23); windDirNow.set(Math.cos(a), Math.sin(a)); uWindDir.value.copy(windDirNow); WU.uWDir.value.copy(windDirNow);
+  const a = 0.6 + 0.22 * Math.sin(S.t * 0.05) + 0.1 * Math.sin(S.t * 0.13); WU.uWT.value += dt * (0.45 + 1.1 * Math.min(1.5, wE)); windDirNow.set(Math.cos(a), Math.sin(a)); uWindDir.value.copy(windDirNow); WU.uWDir.value.copy(windDirNow);
   if (S.leaves) S.leaves.update(dt, S.t, wE, S.target);
   if (AU.wind) AU.wind.gain.value += ((AU.muted ? 0 : 0.11 * Math.max(0, wE - 0.2) / 0.8 * (0.5 + 1.0 * gustJS(S.target.x, S.target.z, S.t))) - AU.wind.gain.value) * Math.min(1, dt * 3);
 }
