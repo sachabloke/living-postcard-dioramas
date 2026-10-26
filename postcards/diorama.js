@@ -3,7 +3,7 @@
 // Local only. Reads game modules and assets; changes nothing in the game.
 import * as THREE from 'three';
 import { BIOMES } from './biomes.js';
-import { loadModels, instantiate, makeSky, makeFire, uTime, uWind } from '../src/scene.js';
+import { loadModels, instantiate, makeSky, makeFire, uTime, uWind, uWindDir, addWindSway, GUST } from '../src/scene.js';
 import { atmosphere, withWeather, phaseName } from '../src/atmosphere.js';
 import { makeRain, createBolt } from '../src/weatherfx.js';
 import { makeRng } from '../src/rng.js';
@@ -113,9 +113,11 @@ function buildGrass(b, H, hasWater, avoid) {
   }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(cl, 3)); geo.setAttribute('aTip', new THREE.Float32BufferAttribute(uv, 1));
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide });
-  mat.onBeforeCompile = (sh) => { sh.uniforms.uTime = uTime; sh.uniforms.uWind = uWind;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aTip; uniform float uTime; uniform float uWind;').replace('#include <begin_vertex>', `#include <begin_vertex>
-{ vec3 ip = vec3(instanceMatrix[3][0], 0.0, instanceMatrix[3][2]); float ph = ip.x * 0.7 + ip.z * 0.5; transformed.x += sin(uTime * 1.6 + ph) * aTip * 0.07 * uWind; transformed.z += cos(uTime * 1.3 + ph * 1.3) * aTip * 0.05 * uWind; }`); };
+  mat.onBeforeCompile = (sh) => { sh.uniforms.uTime = uTime; sh.uniforms.uWind = uWind; sh.uniforms.uWindDir = uWindDir;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aTip; uniform float uTime; uniform float uWind; uniform vec2 uWindDir;\n' + GUST).replace('#include <color_vertex>', '#include <color_vertex>\n#ifdef USE_COLOR\n{ vec2 ipc = vec2(instanceMatrix[3][0], instanceMatrix[3][2]); vColor.rgb *= 1.0 + 0.22 * gustAt(ipc, normalize(uWindDir), uTime) * aTip * min(uWind, 2.2); }   // gust fronts show as lighter bands sweeping the grass\n#endif').replace('#include <begin_vertex>', `#include <begin_vertex>
+{ vec3 ip = vec3(instanceMatrix[3][0], 0.0, instanceMatrix[3][2]); float ph = ip.x * 0.7 + ip.z * 0.5; vec2 wd = normalize(uWindDir); float gu = gustAt(ip.xz, wd, uTime), w = uWind * (0.55 + 1.0 * gu);   // grass leans downwind and ripples as gust fronts pass
+  vec3 dl = normalize(transpose(mat3(instanceMatrix)) * vec3(wd.x, 0.0, wd.y) + vec3(1e-5)); vec3 pl = vec3(-dl.z, 0.0, dl.x);
+  transformed += dl * aTip * 0.075 * w * (1.0 + 0.35 * sin(uTime * 1.8 + ph)) + pl * aTip * 0.04 * w * cos(uTime * 1.35 + ph * 1.3); transformed.y -= aTip * aTip * 0.012 * w * w; }`); };
   const N = Math.round(26000 * (1 - (g.snow || 0) * 0.75)), mesh = new THREE.InstancedMesh(geo, mat, N), d = new THREE.Object3D(), c = new THREE.Color(); let n = 0;
   for (let t = 0; t < N * 4 && n < N; t++) {
     const a = rng() * 6.283, r = Math.pow(rng(), 0.62) * 24, x = Math.cos(a) * r, z = Math.sin(a) * r, h = H(x, z);
@@ -135,7 +137,7 @@ function buildFarTrees(b, H, hasWater) {
   mesh.count = n; mesh.frustumCulled = false; return mesh;
 }
 
-const WU = { uSky: { value: new THREE.Color(0x9fc4e0) }, uSun: { value: new THREE.Color(0xfff0c0) }, uGlint: { value: 1 }, uRefl: { value: null }, uTexMat: { value: new THREE.Matrix4() }, uReflAmt: { value: 0 }, uSunDir: { value: new THREE.Vector3(0.4, 0.8, 0.3) }, uRain: { value: 0 }, uWindW: { value: 1 }, uWFx: { value: 1 }, uStorm: { value: 0 } };   // polish v1: planar reflection (render target + texture matrix, filled in tick)
+const WU = { uSky: { value: new THREE.Color(0x9fc4e0) }, uSun: { value: new THREE.Color(0xfff0c0) }, uGlint: { value: 1 }, uRefl: { value: null }, uTexMat: { value: new THREE.Matrix4() }, uReflAmt: { value: 0 }, uSunDir: { value: new THREE.Vector3(0.4, 0.8, 0.3) }, uRain: { value: 0 }, uWindW: { value: 1 }, uWFx: { value: 1 }, uStorm: { value: 0 }, uWDir: { value: new THREE.Vector2(0.8, 0.6) } };   // polish v1: planar reflection (render target + texture matrix, filled in tick)
 function buildWater(b, H) {
   const rings = 80, segs = 160, pos = [], col = [], idx = [], deep = rgb(b.relief.style === 'marsh' ? 0x2c4a52 : b.relief.style === 'sea' ? 0x2b86a0 : 0x1f5f7a), shallow = rgb(b.relief.style === 'marsh' ? 0x7aa39b : 0x6fc2c0);
   for (let i = 0; i <= rings; i++) for (let j = 0; j <= segs; j++) { const r = ringR(i, rings), a = j / segs * Math.PI * 2, x = Math.cos(a) * r, z = Math.sin(a) * r, d = Math.max(0, -H(x, z)); pos.push(x, 0, z); const t = sstep(0, 1.2, d), c = mix3(shallow, deep, t); col.push(...c, d < 0.01 ? 0 : 0.35 + 0.55 * sstep(0, 0.5, d)); }
@@ -166,15 +168,16 @@ function buildWater(b, H) {
   float surfS(float dist, float t) { return 0.5 + 0.5 * sin(dist * 0.78 + t * 1.55); }
 `;
   mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.uniforms.uSurf = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; attribute float aDist; attribute vec2 aGr; uniform float uTime; uniform float uSea; uniform float uSurf; uniform float uStorm;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vDist = aDist; vGr = aGr; vH = 0.0; if (uSea > 0.5) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uTime, aDepth, aDist, aGr); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; uniform float uStorm; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
-  vec2 q = vWP.xz; float T = uTime; float ch = (0.55 + 0.45 * uWindW) * (1.0 + 1.3 * uSea) * (1.0 + 0.8 * uStorm);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; uniform vec2 uWDir; uniform float uStorm; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
+  vec2 q = vWP.xz; float T = uTime; float gustW = 0.5 + 0.5 * sin(dot(q, normalize(uWDir)) * 0.11 - T * 1.5 + 1.3 * sin(dot(q, vec2(-uWDir.y, uWDir.x)) * 0.07)); gustW *= gustW;   // the same gust front that bends the trees; it ruffles the water as it passes
+  float ch = (0.55 + 0.45 * uWindW) * (1.0 + 1.3 * uSea) * (1.0 + 0.8 * uStorm) * (0.8 + 0.6 * gustW);
   // wave normal: five travelling waves (long swell to short chop) plus fine ripple; amplitude follows the wind
   vec2 g = vec2(0.0);
   { vec2 d1 = normalize(vec2(1.0, 0.35)); float f1 = dot(q, d1) * 0.55 + T * 0.9; g += d1 * cos(f1) * 0.55 * 0.5 * ch;
     vec2 d2 = normalize(vec2(-0.4, 1.0)); float f2 = dot(q, d2) * 0.95 - T * 1.15; g += d2 * cos(f2) * 0.95 * 0.28 * ch;
-    vec2 d3 = normalize(vec2(0.8, -0.7)); float f3 = dot(q, d3) * 1.7 + T * 1.5; g += d3 * cos(f3) * 1.7 * 0.12 * ch;
-    vec2 d4 = normalize(vec2(-0.9, -0.3)); float f4 = dot(q, d4) * 3.1 - T * 2.0; g += d4 * cos(f4) * 3.1 * 0.05 * uWindW;
-    vec2 d5 = normalize(vec2(0.2, 0.95)); float f5 = dot(q, d5) * 5.6 + T * 2.6; g += d5 * cos(f5) * 5.6 * 0.022 * uWindW; }
+    vec2 d3 = normalize(uWDir + vec2(0.001)); float f3 = dot(q, d3) * 1.7 + T * 1.5; g += d3 * cos(f3) * 1.7 * 0.12 * ch;
+    vec2 d4 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.45); float f4 = dot(q, d4) * 3.1 - T * 2.0; g += d4 * cos(f4) * 3.1 * 0.05 * uWindW;
+    vec2 d5 = normalize(uWDir - vec2(-uWDir.y, uWDir.x) * 0.5); float f5 = dot(q, d5) * 5.6 + T * 2.6; g += d5 * cos(f5) * 5.6 * 0.022 * uWindW; }
   if (uSea > 0.5) g += swell(q, T, vDep, vDist, vGr).yz;
   // rain rings: a jittered grid of expanding circles
   float ringH = 0.0;
@@ -184,7 +187,7 @@ function buildWater(b, H) {
   vec4 rc = uTexMat * vec4(vWP, 1.0); vec3 refl = texture2D(uRefl, rc.xy / rc.w + g * 0.035 * (0.4 + 0.6 * V.y)).rgb;
   float rk = uReflAmt * (0.22 + 0.7 * fr) * (1.0 - 0.4 * uSea) * (1.0 - 0.35 * uStorm) * (0.5 + 0.5 * clamp(diffuseColor.a * 1.6, 0.0, 1.0)); outgoingLight = mix(outgoingLight, refl, rk);
   outgoingLight = mix(outgoingLight, uSky, fr * 0.7 * (1.0 - uReflAmt * 0.6) * (1.0 - 0.5 * uSea));
-  outgoingLight *= 1.0 - 0.6 * uStorm * uSea;   // storm sea goes dark slate under the cloud
+  outgoingLight *= 1.0 - 0.1 * gustW * min(uWindW, 1.5) * (1.0 - uSea) - 0.6 * uStorm * uSea;   // storm sea goes dark slate under the cloud
   // sun glitter: reflected sun direction against the wave normals (broad sheen + sharp sparkle)
   vec3 Rv = reflect(-normalize(uSunDir), N); float sd = max(dot(Rv, V), 0.0);
   outgoingLight += uSun * (pow(sd, 60.0) * 0.5 + pow(sd, 600.0) * 3.0) * uGlint * uWFx;
@@ -206,13 +209,19 @@ function buildWater(b, H) {
 
 // ---------- scattering ----------
 function tinted(obj, hex) { obj.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.color.lerp(new THREE.Color(hex), 0.6); } }); }
+// polish v1: trees, shrubs, flowers, reeds and grass tufts bend downwind and flutter; stiff things (rocks, props, animals) are left alone
+const SWAYS = /tree|pine|shrub|bush|grass|clover|flower|reed|cattail|fern|plant|birch|willow|bamboo|berry|bracken|herb|lily|sapling|oak|palm/i, STIFF = /fence|stone|rock|barrel|crate|dock|boat|fire|log|wood|lantern|basket|rabbit|boulder|spire|slab|bridge|tent|stump|ring/i;
+function swayObj(obj, name) {
+  const info = MODELS[name]; if (!info || !SWAYS.test(name) || STIFF.test(name)) return; const h = info.size[1] || 1, tall = h >= 3, mid = h >= 1.1;
+  obj.traverse(o => { if (!o.isMesh) return; for (const mt of [].concat(o.material)) { const leafy = /leaf/i.test(mt.name || ''); addWindSway(mt, tall ? { amp: 0.035 / h, freq: 1.1, hBase: info.minY + h * 0.28, flutter: leafy ? 0.006 * h : 0.001 * h, hTop: h } : mid ? { amp: 0.08 / h, freq: 1.6, hBase: info.minY + h * 0.06, flutter: leafy ? 0.008 * h : 0, hTop: h } : { amp: 0.13 / h, freq: 2.0, hBase: info.minY + h * 0.03, flutter: leafy ? 0.01 * h : 0, hTop: h }); } });
+}
 function populate(b, H, hasWater, group) {
   const rng = makeRng(b.seed * 7 + 1), placed = [], cols = [{ x: b.character.pos[0], z: b.character.pos[1], r: 1.8 }], water = (x, z) => hasWater && H(x, z) < 0.04;
   const zoneOk = (zone, x, z) => { const h = H(x, z); if (zone === 'dry') return !hasWater || h > 0.38; if (zone === 'shore') return hasWater && h > 0.0 && h < 0.5; if (zone === 'water') return hasWater && h < -0.2; return true; };
   const hs = (it, v) => (it.h && MODELS[it.m] ? it.h * (0.85 + v * 0.3) / MODELS[it.m].size[1] : null);   // optional target height in metres
   const put = (it, x, z, rot, s, yAt) => {
     const info = MODELS[it.m]; if (!info) return null; const y = yAt ?? (it.y === 'water' ? 0 : H(x, z)), o = instantiate(MODELS, it.m, x, z, rot, s, /boulder|rock|spire|slab/.test(it.m) ? 0.08 : 0, y);
-    if (it.tint) tinted(o, it.tint); group.add(o); const rec = { m: it.m, x, z, y, s, rot, info, obj: o }; placed.push(rec); return rec;
+    if (it.tint) tinted(o, it.tint); swayObj(o, it.m); group.add(o); const rec = { m: it.m, x, z, y, s, rot, info, obj: o }; placed.push(rec); return rec;
   };
   for (const it of b.scatter) {
     if (!MODELS[it.m]) continue;
@@ -286,7 +295,7 @@ async function show(id, opts = {}) {
     const clip = info.clips.find(c => /idle/i.test(c.name)) || info.clips[0]; if (clip) { const mx = new THREE.AnimationMixer(o.children[0]); mx.clipAction(clip).play(); S.mixers.push(mx); } if (an.high) S.flyers.push({ o, y0: o.position.y, x0: pos[0], z0: pos[1], ph: rng() * 6 }); }
   if (b.extras.fire) { const f = makeFire(MODELS, b.extras.fire[0], b.extras.fire[1]); f.group.position.y = H(b.extras.fire[0], b.extras.fire[1]); things.add(f.group); S.fire = f; }
   if (b.extras.fireflies) { S.fireflies = makeFireflies(b.extras.fireflies, H); root.add(S.fireflies); }
-  scene.add(root); S.root = root; S.tod = opts.tod ?? b.tod; S.wx = opts.wx || 'default'; S.wch = { ...(S.wx === 'default' ? { cloud: 0, fog: 0, rain: 0, wet: 0, wind: 0.2, storm: 0, snow: 0, dust: 0, ...b.weather } : WEATHERS[S.wx]) };
+  S.leaves = makeLeaves(b); root.add(S.leaves.mesh); scene.add(root); S.root = root; S.tod = opts.tod ?? b.tod; S.wx = opts.wx || 'default'; S.wch = { ...(S.wx === 'default' ? { cloud: 0, fog: 0, rain: 0, wet: 0, wind: 0.2, storm: 0, snow: 0, dust: 0, ...b.weather } : WEATHERS[S.wx]) };
   S.yaw = opts.yaw ?? (C.face && C.face !== 'view' || C.faceAt || C.faceTo ? face + Math.PI + 0.85 : b.cam.yaw); S.pitch = opts.pitch ?? b.cam.pitch; S.dist = opts.dist ?? b.cam.dist; S.target.set(cx, H(cx, cz) + 0.9, cz);
   { const cp = Math.cos(S.pitch), cam = new THREE.Vector3(cx + Math.sin(S.yaw) * cp * S.dist, 0, cz + Math.cos(S.yaw) * cp * S.dist);   // keep the camera's view of the character clear of trunks and rocks
     for (const p of placed.slice()) { const tall = p.info.size[1] * p.s; if (tall < 0.5 || (tall < 1.8 && p.info.base.r * p.s < 0.7) || p.obj === sk) continue; const vx = cam.x - cx, vz = cam.z - cz, t = Math.min(1, Math.max(0, ((p.x - cx) * vx + (p.z - cz) * vz) / (vx * vx + vz * vz))), d = Math.hypot(p.x - (cx + vx * t), p.z - (cz + vz * t)); if (((p.x - cx) * vx + (p.z - cz) * vz) > 0 && d < 1.6 + p.info.base.r * p.s) { things.remove(p.obj); placed.splice(placed.indexOf(p), 1); } } }
@@ -312,6 +321,32 @@ function reflectPass() {
   const prevRT = renderer.getRenderTarget(), prevClip = renderer.clippingPlanes, vis = wm.visible, sh = renderer.shadowMap.autoUpdate; wm.visible = false; renderer.clippingPlanes = clipPl; renderer.shadowMap.autoUpdate = false;
   renderer.setRenderTarget(reflRT); renderer.clear(); renderer.render(scene, mirror); renderer.setRenderTarget(prevRT); renderer.clippingPlanes = prevClip; renderer.shadowMap.autoUpdate = sh; wm.visible = vis; WU.uReflAmt.value = 1;
 }
+// ---------- wind (polish v1) ----------
+// Direction drifts slowly; gust fronts (the same function in every shader) roll across grass, trees and water. S.windUser overrides the weather's wind (0 .. 1).
+S.windUser = null; const windDirNow = new THREE.Vector2(), gustJS = (x, z, t) => { const wd = windDirNow, a = (x * wd.x + z * wd.y) * 0.11 - t * 1.5 + 1.3 * Math.sin((-x * wd.y + z * wd.x) * 0.07), g = 0.5 + 0.5 * Math.sin(a); return g * g; };
+function makeLeaves(b) {
+  const names = b.scatter.map(x => x.m).join(' '), blossom = /blossom/.test(names), autumn = /autumn|gold|maple/.test(names + b.id) || /harvest/.test(b.id), snowy = (b.ground.snow || 0) > 0.5;
+  const pal = (blossom ? [0xffd3e2, 0xffc0d4, 0xfff0f5] : autumn ? [0xd98a2b, 0xb5541f, 0xe8b84a, 0x9c3d1e] : [0x7fa64a, 0x9bbf5a, 0x6e9a3e]).map(c => new THREE.Color(c)), N = snowy ? 0 : blossom ? 150 : 120, sz = blossom ? 0.055 : 0.09;
+  const geo = new THREE.PlaneGeometry(sz, sz * (blossom ? 1 : 0.65)), mat = new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }), mesh = new THREE.InstancedMesh(geo, mat, Math.max(1, N)); mesh.frustumCulled = false; mesh.count = 0; mesh.castShadow = false;
+  const P = new Float32Array(N * 3), PH = new Float32Array(N), SP = new Float32Array(N * 3), dm = new THREE.Object3D(); for (let i = 0; i < N; i++) { mesh.setColorAt(i, pal[i % pal.length]); PH[i] = Math.random() * 6.28; SP[i * 3] = (Math.random() - 0.5) * 6; SP[i * 3 + 1] = (Math.random() - 0.5) * 6; SP[i * 3 + 2] = (Math.random() - 0.5) * 6; P[i * 3 + 1] = -99; }
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  const spawn = (i, tg) => { const wd = windDirNow, side = (Math.random() - 0.5) * 30, up = 10 + Math.random() * 8, x = tg.x - wd.x * up - wd.y * side, z = tg.z - wd.y * up + wd.x * side; P[i * 3] = x; P[i * 3 + 2] = z; P[i * 3 + 1] = Math.max(0, S.H(x, z)) + 0.3 + Math.random() * 5; };
+  return { mesh, update(dt, t, wE, tg) {
+    const n = Math.floor(N * Math.min(1, Math.max(0, (wE - 0.12) / 0.7))); mesh.count = n; if (!n) return; const wd = windDirNow;
+    for (let i = 0; i < n; i++) { let x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+      if (y < -50 || Math.hypot(x - tg.x, z - tg.z) > 18) { spawn(i, tg); x = P[i * 3]; y = P[i * 3 + 1]; z = P[i * 3 + 2]; }
+      const gu = gustJS(x, z, t), sp = (0.9 + 5.5 * wE) * (0.35 + 1.1 * gu), ph = PH[i] + t * 2.4;
+      x += (wd.x * sp - wd.y * Math.sin(ph) * 0.5) * dt; z += (wd.y * sp + wd.x * Math.sin(ph) * 0.5) * dt; y += (-0.3 + Math.cos(ph * 0.8) * 0.45 * wE + gu * wE * 1.2) * dt;
+      const g0 = Math.max(0, S.H(x, z)) + 0.04; if (y < g0) { y = g0 + 4 + Math.random() * 3; spawn(i, tg); x = P[i * 3]; z = P[i * 3 + 2]; y = P[i * 3 + 1]; }
+      P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; dm.position.set(x, y, z); dm.rotation.set(ph * SP[i * 3] * 0.5, ph * SP[i * 3 + 1] * 0.5, ph * SP[i * 3 + 2] * 0.5); dm.updateMatrix(); mesh.setMatrixAt(i, dm.matrix); }
+    mesh.instanceMatrix.needsUpdate = true; } };
+}
+function windTick(dt, wE) {
+  const a = 0.6 + 0.35 * Math.sin(S.t * 0.07) + 0.2 * Math.sin(S.t * 0.23); windDirNow.set(Math.cos(a), Math.sin(a)); uWindDir.value.copy(windDirNow); WU.uWDir.value.copy(windDirNow);
+  if (S.leaves) S.leaves.update(dt, S.t, wE, S.target);
+  if (AU.wind) AU.wind.gain.value += ((AU.muted ? 0 : 0.11 * Math.max(0, wE - 0.2) / 0.8 * (0.5 + 1.0 * gustJS(S.target.x, S.target.z, S.t))) - AU.wind.gain.value) * Math.min(1, dt * 3);
+}
+function setWind(v) { S.windUser = v; const sl = $('wind'); if (sl && v != null) sl.value = v; const bt = $('windbtn'); if (bt) bt.textContent = v == null ? '🍃' : '🍃 ' + (v < 0.4 ? '1' : v < 0.7 ? '2' : v < 0.9 ? '3' : '4') + '/4'; document.body.classList.toggle('windy', v != null); }
 // ---------- thunderstorm (polish v1) ----------
 // Intensity 0.2 .. 1 (S.stormI). Lightning bolts at random in front of the camera with a flickering flash that lights the whole scene, then thunder
 // (synthesised with Web Audio, no files): a sharp crack when the strike is close, a long rolling rumble that arrives later the farther away it is.
@@ -320,6 +355,7 @@ function audioInit() {
   if (AU.ctx || (!window.AudioContext && !window.webkitAudioContext)) { if (AU.ctx && AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
   const c = AU.ctx = new (window.AudioContext || window.webkitAudioContext)(), len = c.sampleRate * 2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = rnd() * 2 - 1; AU.noise = buf;
   const src = c.createBufferSource(); src.buffer = buf; src.loop = true; const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 700; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7000; AU.rain = c.createGain(); AU.rain.gain.value = 0; src.connect(hp).connect(lp).connect(AU.rain).connect(c.destination); src.start();
+  const ws = c.createBufferSource(); ws.buffer = buf; ws.loop = true; const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 520; bp.Q.value = 0.55; AU.wind = c.createGain(); AU.wind.gain.value = 0; ws.connect(bp).connect(AU.wind).connect(c.destination); ws.start(0, 0.7);
 }
 function thunder(delay, I, near) {
   const c = AU.ctx; if (!c || AU.muted) return; const t0 = c.currentTime + delay, vol = (0.35 + 0.65 * I) * (near ? 1 : 0.7), out = c.createGain(); out.gain.value = vol; out.connect(c.destination);
@@ -348,14 +384,14 @@ function tick(dt) {
   sun.color.setRGB(...a.lightColor); sun.intensity = a.lightIntensity; hemi.color.setRGB(...a.hemiSky); hemi.groundColor.setRGB(...a.hemiGround); hemi.intensity = a.hemiIntensity * (1.2 + 0.8 * night);
   const L = a.lightDir; sun.position.set(L[0] * 70, Math.max(L[1], 0.08) * 70, L[2] * 70); sun.castShadow = L[1] > 0.02 && ch.fog < 0.9; scene.fog.color.setRGB(...a.fogColor); scene.fog.near = a.fogNear * QT.nearK[Q.near] * (1 + 1.2 * ch.storm); scene.fog.far = Math.min(a.fogFar * 0.8 * (1 + 1.0 * ch.storm), QT.far[Q.far] * (1 + 0.8 * ch.storm));   // polish v1: a storm darkens the picture but no longer swallows the distance renderer.toneMappingExposure = a.exposure * (1 - 0.3 * ch.storm);
   const su = sky.material.uniforms; { const fg = Math.min(1, ch.fog * 3 + ch.rain * 0.3), fz = Math.min(1, ch.fog * 4); su.zen.value.setRGB(...a.sky.zenith).lerp(scene.fog.color, fz); su.hor.value.setRGB(...a.sky.horizon).lerp(scene.fog.color, fg); if (fl > 0.02) { su.zen.value.lerp(new THREE.Color(0.85, 0.9, 1), Math.min(0.8, fl * 0.7)); su.hor.value.lerp(new THREE.Color(0.9, 0.93, 1), Math.min(0.8, fl * 0.7)); } } su.sunDir.value.set(...a.sunDir); su.sunCol.value.setRGB(...a.lightColor); su.moonDir.value.set(...a.moonDir); su.night.value = a.night; su.cloud.value = QT.cloud[Q.far] * Math.min(1, ch.cloud + ch.rain * 0.4) * (1 - Math.min(0.9, ch.fog * 1.5)); su.grey.value.setRGB(...a.fogColor).lerp(su.hor.value, 0.65).multiplyScalar(1.15); sky.position.copy(camera.position);
-  uWind.value = 1 + 1.4 * ch.wind + 1.4 * ch.storm; rain.uniforms.uTime.value = S.t; rain.uniforms.uGround.value = -1.5; rain.setAmount(ch.rain); rain.uniforms.uColor.value.setRGB(...(night > 0.5 ? [0.45, 0.55, 0.75] : [0.74, 0.81, 0.9]));
+  const wE = S.windUser ?? ch.wind; uWind.value = 1 + 1.4 * wE + 1.4 * ch.storm; windTick(dt, Math.min(1, wE + 0.5 * ch.storm)); rain.uniforms.uTime.value = S.t; rain.uniforms.uGround.value = -1.5; rain.setAmount(ch.rain); rain.uniforms.uColor.value.setRGB(...(night > 0.5 ? [0.45, 0.55, 0.75] : [0.74, 0.81, 0.9]));
   snowfall.userData.update(S.t, dt, ch.snow, S.target);
   { const sunUp = sstep(0.04, 0.3, L[1]), amt = sunUp * (1 - night) * (1 - Math.min(1, ch.cloud * 1.2)) * (1 - ch.fog * 0.3) * (1 - ch.rain), dir = new THREE.Vector3(-L[0], -L[1], -L[2]).normalize(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     shaftMat.opacity = QT.shaftOp[Q.vol] * amt; shaftMat.color.setRGB(...a.lightColor); shafts.visible = amt > 0.02;
     shafts.children.forEach((m, k) => { m.visible = k < QT.shafts[Q.near]; }); for (const m of shafts.children) { const u = m.userData, len = 26; m.scale.set(u.w, len, 1); m.quaternion.copy(q).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), u.ry)); m.position.set(S.target.x + u.ox, 0, S.target.z + u.oz).addScaledVector(dir, -len * 0.5).setY(len * 0.5 * -dir.y + 0.5); }
     motes.material.opacity = 0.65 * (sunUp * (1 - night) * (1 - ch.rain) * (1 - ch.snow) + night * 0.0) * (1 - ch.fog * 0.5); motes.material.color.setRGB(...a.lightColor); motes.visible = motes.material.opacity > 0.01 && QT.motes[Q.part] > 0; motes.geometry.setDrawRange(0, QT.motes[Q.part]); motes.material.size = 0.09 * QT.particle[Q.part];
     moteB.forEach((p, i) => { moteP[i * 3] = S.target.x + p[0] + Math.sin(S.t * 0.2 + p[3]) * 0.9; moteP[i * 3 + 1] = Math.max(S.H(S.target.x + p[0], S.target.z + p[2]), 0) + p[1] + Math.sin(S.t * 0.5 + p[3]) * 0.3; moteP[i * 3 + 2] = S.target.z + p[2] + Math.cos(S.t * 0.17 + p[3]) * 0.9; }); motes.geometry.attributes.position.needsUpdate = true;
-    WU.uSky.value.setRGB(...a.sky.horizon).lerp(new THREE.Color(...a.sky.zenith), 0.35); WU.uSun.value.setRGB(...a.lightColor); WU.uGlint.value = amt + 0.1; WU.uSunDir.value.set(...a.sunDir); WU.uRain.value = ch.rain; WU.uWindW.value = 0.5 + ch.wind; WU.uWFx.value = 0.35 + 0.65 * (1 - night); WU.uStorm.value = ch.storm; }
+    WU.uSky.value.setRGB(...a.sky.horizon).lerp(new THREE.Color(...a.sky.zenith), 0.35); WU.uSun.value.setRGB(...a.lightColor); WU.uGlint.value = amt + 0.1; WU.uSunDir.value.set(...a.sunDir); WU.uRain.value = ch.rain; WU.uWindW.value = 0.5 + (S.windUser ?? ch.wind); WU.uWFx.value = 0.35 + 0.65 * (1 - night); WU.uStorm.value = ch.storm; }
   if (S.fire) S.fire.update(S.t, dt, night, 1); if (S.fireflies) S.fireflies.userData.update(S.t, night); if (S.lamp) S.lamp.intensity = night * 6;
   for (const f of S.flyers) { f.o.position.set(f.x0 + Math.sin(S.t * 0.6 + f.ph) * 1.4, f.y0 + Math.sin(S.t * 1.7 + f.ph) * 0.25, f.z0 + Math.cos(S.t * 0.5 + f.ph) * 1.4); }
   if (S.spin && !drag) S.yaw += dt * 0.07;
@@ -394,8 +430,10 @@ $('tabs').innerHTML = BIOMES.map(b => `<button data-id="${b.id}">${b.id}</button
 $('wx').onclick = e => { const w = e.target.dataset?.w; if (!w) return; S.wx = w; S.wch = { ...(w === 'default' ? { cloud: 0, fog: 0, rain: 0, wet: 0, wind: 0.2, storm: 0, snow: 0, dust: 0, ...S.b.weather } : w === 'storm' ? stormCh(S.stormI) : WEATHERS[w]) }; if (w === 'storm') { audioInit(); nextStrike = 0.8; } setStorm(S.stormI); ui(S.b); };
 $('storm').oninput = e => { setStorm(+e.target.value); };
 $('stormbtn').onclick = () => { audioInit(); const L = [0.35, 0.7, 1]; if (S.wx !== 'storm') { S.wx = 'storm'; S.stormI = L[0]; S.wch = stormCh(L[0]); nextStrike = 0.8; } else { const i = L.findIndex(v => Math.abs(v - S.stormI) < 0.06); if (i === 2) { S.wx = 'default'; S.wch = { cloud: 0, fog: 0, rain: 0, wet: 0, wind: 0.2, storm: 0, snow: 0, dust: 0, ...S.b.weather }; } else { S.stormI = L[i + 1]; S.wch = stormCh(S.stormI); nextStrike = 0.4; } } setStorm(S.stormI); ui(S.b); };
+$('wind').oninput = e => { audioInit(); setWind(+e.target.value); };
+$('windbtn').onclick = () => { audioInit(); const L = [0.25, 0.55, 0.8, 1]; const i = S.windUser == null ? -1 : L.findIndex(v => Math.abs(v - S.windUser) < 0.06); setWind(i >= 3 ? null : L[i + 1]); };
 $('sndbtn').onclick = () => { audioInit(); AU.muted = !AU.muted; $('sndbtn').textContent = AU.muted ? '🔇' : '🔊'; };
-addEventListener('pointerdown', () => { if (S.wx === 'storm') audioInit(); }, { once: false });
+addEventListener('pointerdown', () => { if (S.wx === 'storm' || S.windUser != null) audioInit(); }, { once: false });
 $('time').oninput = e => { S.tod = +e.target.value; }; $('spin').onchange = e => { S.spin = e.target.checked; };
 $('save').onclick = () => { renderer.render(scene, camera); const src = renderer.domElement, c = document.createElement('canvas'), W = src.width, Hh = src.height, band = Math.round(Hh * 0.1); c.width = W; c.height = Hh + band; const x = c.getContext('2d'); x.fillStyle = '#f6efe0'; x.fillRect(0, 0, W, c.height); x.drawImage(src, 0, 0);
   x.fillStyle = '#2b2a22'; x.font = `italic 700 ${Math.round(band * 0.45)}px Georgia, serif`; x.fillText(S.b.title, band * 0.3, Hh + band * 0.62); x.font = `${Math.round(band * 0.24)}px system-ui, sans-serif`; x.fillStyle = '#6a6556'; x.fillText(S.b.place, band * 0.3, Hh + band * 0.88);
@@ -405,7 +443,7 @@ addEventListener('keydown', e => { WK.keys[e.key.toLowerCase()] = true; if (e.ke
   st.addEventListener('pointerdown', e => { id = e.pointerId; st.setPointerCapture(id); mv(e); e.preventDefault(); }); st.addEventListener('pointermove', e => { if (e.pointerId === id) mv(e); }); const end = e => { if (e.pointerId !== id) return; id = null; WK.jx = WK.jy = 0; kn.style.transform = ''; }; st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end); }
 $('walkbtn').onclick = () => setWalk(!WK.on); $('uibtn').onclick = () => document.body.classList.toggle('clean');
 { const qq = new URLSearchParams(location.search); if (qq.get('ui') === '1') document.body.classList.remove('clean'); else if (qq.get('clean') === '1' || matchMedia('(max-width: 700px), (pointer: coarse)').matches) document.body.classList.add('clean'); if (qq.get('walk') === '1') { const t = setInterval(() => { if (S.ready) { setWalk(true); clearInterval(t); } }, 200); } }
-window.__pc = { setWalk, WK, startStrike, setStorm, placedOf: () => S.placed, S, show, tick, scene, camera, renderer, BIOMES, MODELS, size };
+window.__pc = { setWalk, WK, startStrike, setStorm, setWind, placedOf: () => S.placed, S, show, tick, scene, camera, renderer, BIOMES, MODELS, size };
 const q = new URLSearchParams(location.search);
 show(q.get('b') || 'river', { wx: q.get('w') || undefined, tod: q.has('t') ? +q.get('t') : undefined }).then(() => { if (q.has('still')) S.spin = false; });
 requestAnimationFrame(frame);

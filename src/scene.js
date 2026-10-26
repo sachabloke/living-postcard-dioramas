@@ -337,4 +337,33 @@ export function makePlayer() {
   g.userData.animate = (speed01, t) => { const s = Math.sin(t * 9) * 0.7 * speed01; legL.rotation.x = s; legR.rotation.x = -s; armL.rotation.x = -s * 0.8; armR.rotation.x = s * 0.8; body.position.y = 0.95 + Math.abs(Math.sin(t * 9)) * 0.03 * speed01; };
   return g;
 }
-export { addSway };
+/** polish v1: directional wind with travelling gust fronts. amp = bend at the top as a fraction of the model height squared, hBase = local y where the bend starts,
+ *  flutter = high-frequency leaf shake (model units, strongest toward the top, scaled by hTop), hTop = model height. Bends along the world wind direction uWindDir. */
+export const uWindDir = { value: new THREE.Vector2(0.8, 0.6) };
+export const GUST = `float gustAt(vec2 w, vec2 wd, float t) { float g = 0.5 + 0.5 * sin(dot(w, wd) * 0.11 - t * 1.5 + 1.3 * sin(dot(w, vec2(-wd.y, wd.x)) * 0.07)); return g * g; }`;
+function addWindSway(mat, { amp = 0.05, freq = 1.4, hBase = 0, flutter = 0, hTop = 1 } = {}) {
+  if (mat.userData.windSway) return; mat.userData.windSway = true;
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = uTime; sh.uniforms.uWind = uWind; sh.uniforms.uWindDir = uWindDir;
+    sh.vertexShader = 'uniform float uTime; uniform float uWind; uniform vec2 uWindDir;\n' + GUST + '\n' + sh.vertexShader.replace('#include <begin_vertex>',
+      `#include <begin_vertex>
+       float hh = max(0.0, position.y - ${hBase.toFixed(3)});
+       #ifdef USE_INSTANCING
+         mat4 wm = modelMatrix * instanceMatrix;
+       #else
+         mat4 wm = modelMatrix;
+       #endif
+       vec3 wp = (wm * vec4(position, 1.0)).xyz;
+       vec2 wd = normalize(uWindDir);
+       float gust = gustAt(wp.xz, wd, uTime), w = uWind * (0.6 + 0.9 * gust), ph = wp.x * 0.35 + wp.z * 0.27;
+       vec3 dl = normalize(transpose(mat3(wm)) * vec3(wd.x, 0.0, wd.y) + vec3(1e-5)); vec3 pl = vec3(-dl.z, 0.0, dl.x);
+       float bend = hh * hh * ${amp.toFixed(5)} * w;
+       transformed += dl * bend * (1.0 + 0.3 * sin(uTime * ${freq.toFixed(2)} + ph)) + pl * bend * 0.35 * sin(uTime * ${(freq * 1.7).toFixed(2)} + ph * 1.3);
+       transformed.y -= bend * bend / (hh + 0.5) * 0.3;   // a bent stem also drops a little
+       ${flutter > 0 ? `float fl = smoothstep(0.1, 1.0, hh / ${hTop.toFixed(3)}) * ${flutter.toFixed(5)} * w * w;
+       transformed += vec3(sin(uTime * 11.0 + wp.x * 6.0 + wp.y * 4.0), cos(uTime * 9.0 + wp.z * 5.0), sin(uTime * 13.0 + wp.z * 7.0 + wp.x * 3.0)) * fl;` : ''}`);
+  };
+  mat.customProgramCacheKey = () => `wsway${amp}${freq}${hBase}${flutter}${hTop}`;
+  mat.needsUpdate = true;
+}
+export { addSway, addWindSway };
