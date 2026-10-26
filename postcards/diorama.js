@@ -144,10 +144,14 @@ function buildWater(b, H) {
   // polish v1: big swell for the sea (zero on lakes); height H and its slope G at world xz, faded out toward the shore by water depth
   vec3 swell(vec2 p, float t, float dep) { float f = smoothstep(0.15, 2.2, dep); vec2 d1 = normalize(vec2(1.0, 0.3)), d2 = normalize(vec2(-0.5, 1.0)), d3 = normalize(vec2(0.7, -0.6)), d4 = normalize(vec2(-0.2, -1.0));
     float a1 = dot(p, d1) * 0.22 + t * 0.85, a2 = dot(p, d2) * 0.37 - t * 1.05, a3 = dot(p, d3) * 0.66 + t * 1.4, a4 = dot(p, d4) * 1.05 - t * 1.8;
-    float h = 0.75 * sin(a1) + 0.4 * sin(a2) + 0.2 * sin(a3) + 0.09 * sin(a4); vec2 g = d1 * 0.75 * 0.22 * cos(a1) + d2 * 0.4 * 0.37 * cos(a2) + d3 * 0.2 * 0.66 * cos(a3) + d4 * 0.09 * 1.05 * cos(a4); return vec3(h * f, g * f); }
+    float h = 0.75 * sin(a1) + 0.4 * sin(a2) + 0.2 * sin(a3) + 0.09 * sin(a4); vec2 g = d1 * 0.75 * 0.22 * cos(a1) + d2 * 0.4 * 0.37 * cos(a2) + d3 * 0.2 * 0.66 * cos(a3) + d4 * 0.09 * 1.05 * cos(a4); vec3 r = vec3(h * f, g * f);
+    if (uSurf > 0.5) { float k = 0.78, ph = p.x * k + t * 1.55, sn = 0.5 + 0.5 * sin(ph); float amp = 0.62 * (0.35 + 0.65 * smoothstep(2.4, 1.0, dep)) * smoothstep(0.06, 0.55, dep);   // shoaling: waves grow and steepen as the water shallows, crest sharpened by the power
+      r.x += amp * (pow(sn, 2.4) * 1.7 - 0.55); r.y += amp * 1.7 * 2.4 * pow(sn, 1.4) * 0.5 * cos(ph) * k; }
+    return r; }
+  float surfS(vec2 p, float t) { return 0.5 + 0.5 * sin(p.x * 0.78 + t * 1.55); }
 `;
-  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; uniform float uTime; uniform float uSea;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vH = 0.0; if (uSea > 0.5) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uTime, aDepth); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; uniform float uSea; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
+  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.uniforms.uSurf = { value: isSea && b.relief.beach ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; uniform float uTime; uniform float uSea; uniform float uSurf;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vH = 0.0; if (uSea > 0.5) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uTime, aDepth); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
   vec2 q = vWP.xz; float T = uTime; float ch = (0.55 + 0.45 * uWindW) * (1.0 + 1.3 * uSea);
   // wave normal: five travelling waves (long swell to short chop) plus fine ripple; amplitude follows the wind
   vec2 g = vec2(0.0);
@@ -174,6 +178,8 @@ function buildWater(b, H) {
   float foam = (1.0 - smoothstep(lap * 0.35, lap + 0.1, vDep)) * smoothstep(0.0, 0.03, vDep) * (0.55 + 0.45 * nz);
   foam = max(foam, smoothstep(0.62, 0.95, length(g)) * uWindW * 0.35 * nz);
   foam = max(foam, uSea * smoothstep(0.78, 1.05, vH + 0.12 * nz * uWindW) * 0.8 * (0.5 + 0.5 * nz));   // whitecaps on the biggest crests
+  if (uSurf > 0.5) { float sn = surfS(q, T); float crest = smoothstep(0.72, 0.96, sn) * smoothstep(2.0, 0.9, vDep) * smoothstep(0.05, 0.3, vDep);   // the wave breaks: a white lip along the crest, then a turbulent wash behind it that thins as it runs up the sand
+    float wash = smoothstep(1.0, 0.12, vDep) * (0.18 + 0.45 * smoothstep(0.25, 0.85, sn)) * (0.4 + 0.6 * nz) * smoothstep(0.0, 0.05, vDep); foam = max(foam, max(crest * (0.65 + 0.35 * nz), wash)); }
   outgoingLight = mix(outgoingLight, vec3(0.93, 0.97, 0.98) * (0.6 + 0.4 * uWFx), clamp(foam, 0.0, 0.85));
   gl_FragColor = vec4(outgoingLight, clamp(diffuseColor.a + fr * 0.45 + foam * 0.6, 0.0, 1.0));`); };
   const w = new THREE.Mesh(g, mat); w.receiveShadow = !isSea;   /* displaced sea would show shadow acne */ w.renderOrder = 2;
