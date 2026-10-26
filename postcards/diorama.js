@@ -268,7 +268,7 @@ function makeFireflies(n, H) {
 function makeSnowfall(n = 1600) {
   const rng = makeRng(5), p = new Float32Array(n * 3), v = []; for (let i = 0; i < n; i++) { p[i * 3] = (rng() - 0.5) * 36; p[i * 3 + 1] = rng() * 16; p[i * 3 + 2] = (rng() - 0.5) * 36; v.push([0.7 + rng() * 0.9, rng() * 6.28]); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3)); const m = new THREE.Points(g, new THREE.PointsMaterial({ map: softTexture('dot'), size: 0.11, color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false, fog: false }));
-  m.frustumCulled = false; m.userData.update = (t, dt, amt, c) => { m.visible = amt > 0.03; g.setDrawRange(0, Math.floor(n * amt)); m.position.set(c.x, 0, c.z); for (let i = 0; i < n; i++) { p[i * 3 + 1] -= v[i][0] * dt; if (p[i * 3 + 1] < -1) p[i * 3 + 1] += 16; p[i * 3] += Math.sin(t * 0.7 + v[i][1]) * dt * 0.35; } g.attributes.position.needsUpdate = true; };
+  m.frustumCulled = false; m.userData.update = (t, dt, amt, c) => { m.visible = amt > 0.03; m.material.size = 0.11 * (0.9 + 0.7 * Math.max(0, amt - 1)); g.setDrawRange(0, Math.floor(n * Math.min(1, amt))); m.position.set(c.x, 0, c.z); for (let i = 0; i < n; i++) { p[i * 3 + 1] -= v[i][0] * dt; if (p[i * 3 + 1] < -1) p[i * 3 + 1] += 16; p[i * 3] += Math.sin(t * 0.7 + v[i][1]) * dt * 0.35; } g.attributes.position.needsUpdate = true; };
   return m;
 }
 const snowfall = makeSnowfall(); scene.add(snowfall);
@@ -339,7 +339,7 @@ function reflectPass() {
 }
 // ---------- wind (polish v1) ----------
 // Direction drifts slowly; gust fronts (the same function in every shader) roll across grass, trees and water. S.windUser overrides the weather's wind (0 .. 1).
-S.windUser = null; S.coldUser = null; const windDirNow = new THREE.Vector2(), gustJS = (x, z, t) => { const wd = windDirNow, a = (x * wd.x + z * wd.y) * 0.11 - t * 1.5 + 1.3 * Math.sin((-x * wd.y + z * wd.x) * 0.07), g = 0.5 + 0.5 * Math.sin(a); return g * g; };
+S.windUser = null; S.coldUser = null; S.fogUser = null; S.rainUser = null; S.snowUser = null; const windDirNow = new THREE.Vector2(), gustJS = (x, z, t) => { const wd = windDirNow, a = (x * wd.x + z * wd.y) * 0.11 - t * 1.5 + 1.3 * Math.sin((-x * wd.y + z * wd.x) * 0.07), g = 0.5 + 0.5 * Math.sin(a); return g * g; };
 function makeLeaves(b) {
   const names = b.scatter.map(x => x.m).join(' '), blossom = /blossom/.test(names), autumn = /autumn|gold|maple/.test(names + b.id) || /harvest/.test(b.id), snowy = (b.ground.snow || 0) > 0.5;
   const pal = (blossom ? [0xffd3e2, 0xffc0d4, 0xfff0f5] : autumn ? [0xd98a2b, 0xb5541f, 0xe8b84a, 0x9c3d1e] : [0x7fa64a, 0x9bbf5a, 0x6e9a3e]).map(c => new THREE.Color(c)), N = snowy ? 0 : blossom ? 150 : 120, sz = blossom ? 0.055 : 0.09;
@@ -381,6 +381,7 @@ function windTick(dt, wE) {
   { const ar = $('windarrow'); if (ar) { const sy = Math.sin(S.yaw), cy = Math.cos(S.yaw), sx = windDirNow.x * cy - windDirNow.y * sy, up = -windDirNow.x * sy - windDirNow.y * cy; ar.style.transform = `rotate(${(Math.atan2(-up, sx) * 180 / Math.PI).toFixed(0)}deg)`; ar.style.opacity = 0.35 + 0.65 * Math.min(1, wE); } }   // the arrow points the way the wind blows, as seen from the camera
   if (AU.wind) AU.wind.gain.value += ((AU.muted ? 0 : 0.11 * Math.max(0, wE - 0.2) / 0.8 * (0.5 + 1.0 * gustJS(S.target.x, S.target.z, S.t))) - AU.wind.gain.value) * Math.min(1, dt * 3);
 }
+function setWx3(k, v) { S[k + 'User'] = v; const sl = $(k + 'w'); if (sl && v != null) sl.value = v; const bt = $(k + 'btn'); const ic = { fog: '🌫', rain: '🌧', snow: '🌨' }[k]; if (bt) bt.textContent = v == null ? ic : ic + ' ' + (v < 0.4 ? '1' : v < 0.65 ? '2' : v < 0.9 ? '3' : '4'); document.body.classList.toggle(k + 'on', v != null && v > 0.05); }
 function setCold(v) { S.coldUser = v; const sl = $('cold'); if (sl && v != null) sl.value = v; const bt = $('coldbtn'); if (bt) bt.textContent = v == null ? '❄' : '❄ ' + (v < 0.4 ? '1' : v < 0.65 ? '2' : v < 0.9 ? '3' : '4'); document.body.classList.toggle('cold', v != null && v > 0.05); }
 function setWind(v) { S.windUser = v; const sl = $('wind'); if (sl && v != null) sl.value = v; const bt = $('windbtn'); if (bt) bt.firstChild.textContent = v == null ? '🍃 ' : '🍃 ' + (v < 0.4 ? '1' : v < 0.7 ? '2' : v < 0.9 ? '3' : '4') + '/4 '; document.body.classList.toggle('windy', v != null); }
 // ---------- thunderstorm (polish v1) ----------
@@ -416,12 +417,15 @@ function stormTick(dt) {
 function setStorm(I) { S.stormI = I; if (S.wx === 'storm') S.wch = stormCh(I); const sl = $('storm'); if (sl) sl.value = I; const bt = $('stormbtn'); if (bt) bt.textContent = S.wx === 'storm' ? '⚡ ' + (I < 0.5 ? '1' : I < 0.85 ? '2' : '3') + '/3' : '⚡'; document.body.classList.toggle('stormy', S.wx === 'storm'); }
 function tick(dt) {
   if (!S.ready) return; S.t += dt; uTime.value = S.t; step(dt);
-  const ch = S.wch, fl = stormTick(dt), a = withWeather(atmosphere(S.tod), ch, fl), night = a.night, cd = S.coldUser ?? Math.min(1, ch.snow * 0.8);
+  const ch = { ...S.wch }; /* sliders override fog, rain and snow; 1 on a slider is extreme (thick pea-soup fog, a downpour, a blizzard) */
+  if (S.fogUser != null) { ch.fog = Math.min(1, S.fogUser * 1.25); ch.cloud = Math.max(ch.cloud, 0.4 + 0.5 * S.fogUser); } if (S.rainUser != null) { ch.rain = S.rainUser * 1.7; ch.wet = Math.max(ch.wet, Math.min(1, S.rainUser * 1.5)); ch.cloud = Math.max(ch.cloud, 0.4 + 0.6 * S.rainUser); ch.fog = Math.max(ch.fog, 0.1 + 0.4 * S.rainUser); } if (S.snowUser != null) { ch.snow = S.snowUser * 1.6; ch.cloud = Math.max(ch.cloud, 0.4 + 0.5 * S.snowUser); ch.fog = Math.max(ch.fog, 0.1 + 0.5 * S.snowUser); }
+  const fl = stormTick(dt), a = withWeather(atmosphere(S.tod), ch, fl), night = a.night, cd = S.coldUser ?? Math.min(1, ch.snow * 0.8);
   if (cd > 0.01) { const cm = (c, k) => [c[0] + (0.62 - c[0]) * k * 0.5, c[1] + (0.78 - c[1]) * k * 0.45, c[2] + (0.98 - c[2]) * k * 0.4], cg = (c) => { const l = (c[0] + c[1] + c[2]) / 3; return [l + (c[0] - l) * (1 - 0.35 * cd), l + (c[1] - l) * (1 - 0.35 * cd), l + (c[2] - l) * (1 - 0.2 * cd)]; };   /* cold grade: bluer light and shadow, paler greens, weaker sun */
     a.lightColor = cm(a.lightColor, cd * 0.7); a.hemiSky = cm(a.hemiSky, cd); a.hemiGround = cm(a.hemiGround, cd * 0.6); a.fogColor = cm(a.fogColor, cd); a.sky = { zenith: cm(a.sky.zenith, cd * 0.5), horizon: cm(a.sky.horizon, cd * 0.7) }; a.lightIntensity *= 1 - 0.18 * cd; }
   WU.uCold.value = cd;
   sun.color.setRGB(...a.lightColor); sun.intensity = a.lightIntensity; hemi.color.setRGB(...a.hemiSky); hemi.groundColor.setRGB(...a.hemiGround); hemi.intensity = a.hemiIntensity * (1.2 + 0.8 * night);
   const L = a.lightDir; sun.position.set(L[0] * 70, Math.max(L[1], 0.08) * 70, L[2] * 70); sun.castShadow = L[1] > 0.02 && ch.fog < 0.9; scene.fog.color.setRGB(...a.fogColor); scene.fog.near = a.fogNear * QT.nearK[Q.near] * (1 + 1.2 * ch.storm); scene.fog.far = Math.min(a.fogFar * 0.8 * (1 + 1.0 * ch.storm), QT.far[Q.far] * (1 + 0.8 * ch.storm));   // polish v1: a storm darkens the picture but no longer swallows the distance renderer.toneMappingExposure = a.exposure * (1 - 0.3 * ch.storm);
+  if (S.fogUser != null || S.rainUser != null || S.snowUser != null) { const x = Math.max(S.fogUser ?? 0, (S.rainUser ?? 0) * 0.7, (S.snowUser ?? 0) * 0.8); scene.fog.near = Math.max(1.5, scene.fog.near * (1 - 0.6 * x * x)); scene.fog.far = Math.max(scene.fog.near + 14, scene.fog.far * (1 - 0.5 * x * x)); }
   const su = sky.material.uniforms; { const fg = Math.min(1, ch.fog * 3 + ch.rain * 0.3), fz = Math.min(1, ch.fog * 4); su.zen.value.setRGB(...a.sky.zenith).lerp(scene.fog.color, fz); su.hor.value.setRGB(...a.sky.horizon).lerp(scene.fog.color, fg); if (fl > 0.02) { su.zen.value.lerp(new THREE.Color(0.85, 0.9, 1), Math.min(0.8, fl * 0.7)); su.hor.value.lerp(new THREE.Color(0.9, 0.93, 1), Math.min(0.8, fl * 0.7)); } } su.sunDir.value.set(...a.sunDir); su.sunCol.value.setRGB(...a.lightColor); su.moonDir.value.set(...a.moonDir); su.night.value = a.night; su.cloud.value = QT.cloud[Q.far] * Math.min(1, ch.cloud + ch.rain * 0.4) * (1 - Math.min(0.9, ch.fog * 1.5)); su.grey.value.setRGB(...a.fogColor).lerp(su.hor.value, 0.65).multiplyScalar(1.15); sky.position.copy(camera.position);
   const wE = S.windUser ?? ch.wind; uWind.value = 1 + 1.4 * wE + 1.4 * ch.storm; windTick(dt, Math.min(1, wE + 0.5 * ch.storm)); if (S.breath) S.breath.update(dt, S.t, cd, Math.min(1, wE), S.avatar); rain.uniforms.uTime.value = S.t; rain.uniforms.uGround.value = -1.5; rain.setAmount(ch.rain); rain.uniforms.uColor.value.setRGB(...(night > 0.5 ? [0.45, 0.55, 0.75] : [0.74, 0.81, 0.9]));
   snowfall.userData.update(S.t, dt, ch.snow, S.target);
@@ -471,6 +475,7 @@ $('storm').oninput = e => { setStorm(+e.target.value); };
 $('stormbtn').onclick = () => { audioInit(); const L = [0.35, 0.7, 1]; if (S.wx !== 'storm') { S.wx = 'storm'; S.stormI = L[0]; S.wch = stormCh(L[0]); nextStrike = 0.8; } else { const i = L.findIndex(v => Math.abs(v - S.stormI) < 0.06); if (i === 2) { S.wx = 'default'; S.wch = { cloud: 0, fog: 0, rain: 0, wet: 0, wind: 0.2, storm: 0, snow: 0, dust: 0, ...S.b.weather }; } else { S.stormI = L[i + 1]; S.wch = stormCh(S.stormI); nextStrike = 0.4; } } setStorm(S.stormI); ui(S.b); };
 $('wind').oninput = e => { audioInit(); setWind(+e.target.value); };
 $('coldbtn').onclick = () => { const L = [0.3, 0.55, 0.8, 1]; const i = S.coldUser == null ? -1 : L.findIndex(v => Math.abs(v - S.coldUser) < 0.06); setCold(i >= 3 ? null : L[i + 1]); }; $('cold').oninput = (e) => setCold(+e.target.value);
+for (const k of ['fog', 'rain', 'snow']) { $(k + 'btn').onclick = () => { const L = [0.3, 0.55, 0.8, 1], u = S[k + 'User'], i = u == null ? -1 : L.findIndex(v => Math.abs(v - u) < 0.06); setWx3(k, i >= 3 ? null : L[i + 1]); }; $(k + 'w').oninput = (e) => setWx3(k, +e.target.value); }
 $('windbtn').onclick = () => { audioInit(); const L = [0.25, 0.55, 0.8, 1]; const i = S.windUser == null ? -1 : L.findIndex(v => Math.abs(v - S.windUser) < 0.06); setWind(i >= 3 ? null : L[i + 1]); };
 $('sndbtn').onclick = () => { audioInit(); AU.muted = !AU.muted; $('sndbtn').textContent = AU.muted ? '🔇' : '🔊'; };
 addEventListener('pointerdown', () => { if (S.wx === 'storm' || S.windUser != null) audioInit(); }, { once: false });
@@ -483,7 +488,7 @@ addEventListener('keydown', e => { WK.keys[e.key.toLowerCase()] = true; if (e.ke
   st.addEventListener('pointerdown', e => { id = e.pointerId; st.setPointerCapture(id); mv(e); e.preventDefault(); }); st.addEventListener('pointermove', e => { if (e.pointerId === id) mv(e); }); const end = e => { if (e.pointerId !== id) return; id = null; WK.jx = WK.jy = 0; kn.style.transform = ''; }; st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end); }
 $('walkbtn').onclick = () => setWalk(!WK.on); $('uibtn').onclick = () => document.body.classList.toggle('clean');
 { const qq = new URLSearchParams(location.search); if (qq.get('ui') === '1') document.body.classList.remove('clean'); else if (qq.get('clean') === '1' || matchMedia('(max-width: 700px), (pointer: coarse)').matches) document.body.classList.add('clean'); if (qq.get('walk') === '1') { const t = setInterval(() => { if (S.ready) { setWalk(true); clearInterval(t); } }, 200); } }
-window.__pc = { setCold, setWalk, WK, startStrike, setStorm, setWind, placedOf: () => S.placed, S, show, tick, scene, camera, renderer, BIOMES, MODELS, size };
+window.__pc = { setWx3, setCold, setWalk, WK, startStrike, setStorm, setWind, placedOf: () => S.placed, S, show, tick, scene, camera, renderer, BIOMES, MODELS, size };
 const q = new URLSearchParams(location.search);
 show(q.get('b') || 'river', { wx: q.get('w') || undefined, tod: q.has('t') ? +q.get('t') : undefined }).then(() => { if (q.has('still')) S.spin = false; });
 requestAnimationFrame(frame);
