@@ -310,7 +310,7 @@ async function show(id, opts = {}) {
     const clip = info.clips.find(c => /idle/i.test(c.name)) || info.clips[0]; if (clip) { const mx = new THREE.AnimationMixer(o.children[0]); mx.clipAction(clip).play(); S.mixers.push(mx); } if (an.high) S.flyers.push({ o, y0: o.position.y, x0: pos[0], z0: pos[1], ph: rng() * 6 }); }
   if (b.extras.fire) { const f = makeFire(MODELS, b.extras.fire[0], b.extras.fire[1]); f.group.position.y = H(b.extras.fire[0], b.extras.fire[1]); things.add(f.group); S.fire = f; }
   if (b.extras.fireflies) { S.fireflies = makeFireflies(b.extras.fireflies, H); root.add(S.fireflies); }
-  S.leaves = makeLeaves(b); root.add(S.leaves.mesh); S.spray = hasWater ? makeSpray() : null; if (S.spray) root.add(S.spray.pts); scene.add(root); S.root = root; S.tod = opts.tod ?? b.tod; S.wx = opts.wx || 'default'; S.wch = { ...(S.wx === 'default' ? { cloud: 0, fog: 0, rain: 0, wet: 0, wind: 0.2, storm: 0, snow: 0, dust: 0, ...b.weather } : WEATHERS[S.wx]) };
+  S.leaves = makeLeaves(b); root.add(S.leaves.mesh); scene.add(root); S.root = root; S.tod = opts.tod ?? b.tod; S.wx = opts.wx || 'default'; S.wch = { ...(S.wx === 'default' ? { cloud: 0, fog: 0, rain: 0, wet: 0, wind: 0.2, storm: 0, snow: 0, dust: 0, ...b.weather } : WEATHERS[S.wx]) };
   S.yaw = opts.yaw ?? (C.face && C.face !== 'view' || C.faceAt || C.faceTo ? face + Math.PI + 0.85 : b.cam.yaw); S.pitch = opts.pitch ?? b.cam.pitch; S.dist = opts.dist ?? b.cam.dist; S.target.set(cx, H(cx, cz) + 0.9, cz);
   { const cp = Math.cos(S.pitch), cam = new THREE.Vector3(cx + Math.sin(S.yaw) * cp * S.dist, 0, cz + Math.cos(S.yaw) * cp * S.dist);   // keep the camera's view of the character clear of trunks and rocks
     for (const p of placed.slice()) { const tall = p.info.size[1] * p.s; if (tall < 0.5 || (tall < 1.8 && p.info.base.r * p.s < 0.7) || p.obj === sk) continue; const vx = cam.x - cx, vz = cam.z - cz, t = Math.min(1, Math.max(0, ((p.x - cx) * vx + (p.z - cz) * vz) / (vx * vx + vz * vz))), d = Math.hypot(p.x - (cx + vx * t), p.z - (cz + vz * t)); if (((p.x - cx) * vx + (p.z - cz) * vz) > 0 && d < 1.6 + p.info.base.r * p.s) { things.remove(p.obj); placed.splice(placed.indexOf(p), 1); } } }
@@ -358,21 +358,8 @@ function makeLeaves(b) {
       P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; dm.position.set(x, y, z); dm.scale.setScalar(FL[i] ? 1.9 : 1); if (FL[i]) dm.rotation.set(-Math.PI / 2 + Math.sin(ph) * 0.12, 0, SP[i * 3] + Math.sin(ph * 0.5) * 0.2); else dm.rotation.set(ph * SP[i * 3] * 0.5, ph * SP[i * 3 + 1] * 0.5, ph * SP[i * 3 + 2] * 0.5); dm.updateMatrix(); mesh.setMatrixAt(i, dm.matrix); }
     mesh.instanceMatrix.needsUpdate = true; } };
 }
-// wind-blown spray: white mist torn off the water and flung downwind; the sea sheds it at moderate wind, lakes only in strong wind
-function makeSpray() {
-  const N = 900, geo = new THREE.BufferGeometry(), pos = new Float32Array(N * 3).fill(-999), tex = softTexture('dot');
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const mat = new THREE.PointsMaterial({ size: 0.9, map: tex, transparent: true, opacity: 0.55, depthWrite: false, color: 0xeef6ff, sizeAttenuation: true }), pts = new THREE.Points(geo, mat); pts.frustumCulled = false;
-  const V = new Float32Array(N * 3), L = new Float32Array(N);
-  return { pts, update(dt, t, wE, tg) {
-    const sea = S.b && S.b.relief.style === 'sea', k = sea ? Math.max(0, (wE - 0.3) / 0.7) : Math.max(0, (wE - 0.6) / 0.4) * 0.6, want = Math.floor(N * Math.min(1, k)); pts.visible = want > 0; mat.opacity = 0.5 + 0.4 * Math.min(1, k); if (!want) return; const wd = windDirNow;
-    for (let i = 0; i < N; i++) { if (i >= want) { pos[i * 3 + 1] = -999; continue; }
-      if (L[i] <= 0) { let ok = false; for (let a = 0; a < 8 && !ok; a++) { const ang = Math.random() * 6.283, r = 2 + Math.random() * 28, x = tg.x + Math.cos(ang) * r, z = tg.z + Math.sin(ang) * r; if (S.H(x, z) < -0.3) { pos[i * 3] = x; pos[i * 3 + 2] = z; pos[i * 3 + 1] = (sea ? 0.35 : 0.12) + Math.random() * (sea ? 0.7 : 0.2); const sp = (2 + 7 * wE) * (0.5 + 1.0 * gustJS(x, z, t)); V[i * 3] = wd.x * sp; V[i * 3 + 2] = wd.y * sp; V[i * 3 + 1] = 0.3 + Math.random() * 0.8; L[i] = 0.5 + Math.random() * 0.9; ok = true; } } if (!ok) { pos[i * 3 + 1] = -999; L[i] = 0.1; continue; } }
-      L[i] -= dt; pos[i * 3] += V[i * 3] * dt; pos[i * 3 + 2] += V[i * 3 + 2] * dt; V[i * 3 + 1] -= 1.8 * dt; pos[i * 3 + 1] += V[i * 3 + 1] * dt; if (pos[i * 3 + 1] < 0.02) L[i] = 0; }
-    geo.attributes.position.needsUpdate = true; } };
-}
 function windTick(dt, wE) {
   if (S.fx && (S.fx.state === 'float' || S.fx.state === 'bite') && S.fx.pos) WU.uBob.value.set(S.fx.pos.x, S.fx.pos.z, S.fx.state === 'bite' ? 1.6 : 1); else WU.uBob.value.z = 0;
-  if (S.spray) S.spray.update(dt, S.t, wE, S.target);
   /* boats afloat: heel and pitch with the gusts, heave on the chop, and ride downwind to the end of their mooring */
   if (S.placed) for (const p of S.placed) { if (!/boat/.test(p.m) || S.H(p.x, p.z) > -0.15) continue; const o = p.obj, g = gustJS(p.x, p.z, S.t), k = 0.25 + 1.4 * wE, ph = p.x * 0.7 + p.z * 0.5; if (p.bx === undefined) { p.bx = o.position.x; p.bz = o.position.z; p.by = o.position.y; p.br = o.rotation.clone(); }
     const wd = windDirNow, sw = S.t * (1.2 + wE); o.position.set(p.bx + wd.x * (0.1 + 0.5 * wE) * (0.6 + g), p.by + Math.sin(sw + ph) * 0.05 * k + Math.sin(sw * 1.7 + ph * 2) * 0.03 * k, p.bz + wd.y * (0.1 + 0.5 * wE) * (0.6 + g));
