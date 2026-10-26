@@ -158,7 +158,7 @@ function buildWater(b, H) {
   vec3 swell(vec2 p, float t, float dep, float dist, vec2 gr) { float f = smoothstep(0.15, 2.2, dep); vec2 wd0 = normalize(uWDir + vec2(1e-4)), pr0 = vec2(-wd0.y, wd0.x), d1 = wd0, d2 = normalize(wd0 * 0.85 + pr0 * 0.5), d3 = normalize(wd0 * 0.85 - pr0 * 0.5), d4 = normalize(wd0 * 0.6 + pr0 * 0.8);   // swell and chop all run with the wind
     float a1 = dot(p, d1) * 0.22 + t * 0.85, a2 = dot(p, d2) * 0.37 - t * 1.05, a3 = dot(p, d3) * 0.66 + t * 1.4, a4 = dot(p, d4) * 1.05 - t * 1.8;
     float h = 0.75 * sin(a1) + 0.4 * sin(a2) + 0.2 * sin(a3) + 0.09 * sin(a4); vec2 g = d1 * 0.75 * 0.22 * cos(a1) + d2 * 0.4 * 0.37 * cos(a2) + d3 * 0.2 * 0.66 * cos(a3) + d4 * 0.09 * 1.05 * cos(a4); vec3 r = vec3(h * f, g * f);
-    r *= 1.0 + 0.9 * uStorm;
+    r *= (uSea > 0.5 ? 1.0 : uDisp * (0.15 + 1.1 * clamp(uWindW - 0.5, 0.0, 1.5))) * (1.0 + 0.9 * uStorm);
     if (uSurf > 0.5) { float A = 1.0 + 1.2 * uStorm, k1 = 0.78, k2 = 1.35, ph1 = dist * k1 + t * 1.55, ph2 = dist * k2 + t * 2.15 + 1.7, s1 = 0.5 + 0.5 * sin(ph1), s2 = 0.5 + 0.5 * sin(ph2);
       // two wave trains with crests parallel to the nearest shore; shoaling grows and steepens them over the shallows, a weaker version rolls in from the open sea
       float inner = (0.35 + 0.65 * smoothstep(2.4, 1.0, dep)) * smoothstep(0.06, 0.55, dep), outer = 0.16 * smoothstep(48.0, 8.0, dist) * smoothstep(0.5, 2.2, dep), a1 = 0.62 * inner + outer, a2 = 0.28 * inner + 0.5 * outer;
@@ -167,24 +167,24 @@ function buildWater(b, H) {
     return r; }
   float surfS(float dist, float t) { return 0.5 + 0.5 * sin(dist * 0.78 + t * 1.55); }
 `;
-  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.uniforms.uSurf = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; attribute float aDist; attribute vec2 aGr; uniform vec2 uWDir; uniform float uWT; uniform float uTime; uniform float uSea; uniform float uSurf; uniform float uStorm;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vDist = aDist; vGr = aGr; vH = 0.0; if (uSea > 0.5) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uWT, aDepth, aDist, aGr); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; uniform vec2 uWDir; uniform float uWT; uniform float uStorm; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
+  mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.uniforms.uDisp = { value: isSea ? 1 : b.relief.style === 'lake' ? 0.22 : b.relief.style === 'marsh' ? 0.12 : 0 }; /* lakes and marshes heave a little with the wind too */ sh.uniforms.uSurf = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; attribute float aDist; attribute vec2 aGr; uniform vec2 uWDir; uniform float uWT; uniform float uWindW; uniform float uDisp; uniform float uTime; uniform float uSea; uniform float uSurf; uniform float uStorm;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vDist = aDist; vGr = aGr; vH = 0.0; if (uDisp > 0.01) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uWT, aDepth, aDist, aGr); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; uniform vec2 uWDir; uniform float uWT; uniform float uDisp; uniform float uStorm; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
   vec2 q = vWP.xz; float T = uTime; float gustW = 0.5 + 0.5 * sin(dot(q, normalize(uWDir)) * 0.11 - T * 1.5 + 1.3 * sin(dot(q, vec2(-uWDir.y, uWDir.x)) * 0.07)); gustW *= gustW;   // the same gust front that bends the trees; it ruffles the water as it passes
-  float w01 = clamp(uWindW - 0.5, 0.0, 1.5), W = uWT; float ch = (0.3 + 0.9 * w01) * (1.0 + 1.3 * uSea) * (1.0 + 0.8 * uStorm) * (0.7 + 0.8 * gustW);   // calm water is nearly still; more wind, bigger chop, and the gust fronts ruffle it
+  float w01 = clamp(uWindW - 0.5, 0.0, 1.5), W = uWT; float ch = (0.3 + 1.7 * w01) * (1.0 + 1.0 * uSea) * (1.0 + 0.8 * uStorm) * (0.7 + 0.8 * gustW);   // calm water is nearly still; more wind, bigger chop, and the gust fronts ruffle it
   // wave normal: five travelling waves (long swell to short chop) plus fine ripple; amplitude follows the wind
   vec2 g = vec2(0.0);
   { vec2 d1 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.2); float f1 = dot(q, d1) * 0.55 + W * 0.9; g += d1 * cos(f1) * 0.55 * 0.5 * ch;
     vec2 d2 = normalize(uWDir - vec2(-uWDir.y, uWDir.x) * 0.35); float f2 = dot(q, d2) * 0.95 - W * 1.15; g += d2 * cos(f2) * 0.95 * 0.28 * ch;
     vec2 d3 = normalize(uWDir + vec2(0.001)); float f3 = dot(q, d3) * 1.7 + W * 1.5; g += d3 * cos(f3) * 1.7 * 0.12 * ch;
-    vec2 d4 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.45); float f4 = dot(q, d4) * 3.1 - W * 2.0; g += d4 * cos(f4) * 3.1 * 0.05 * (0.15 + w01) * (0.5 + 1.0 * gustW);
+    vec2 d4 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.45); float f4 = dot(q, d4) * 3.1 - W * 2.0; g += d4 * cos(f4) * 3.1 * 0.06 * (0.15 + w01) * (0.5 + 1.0 * gustW);
     vec2 d5 = normalize(uWDir - vec2(-uWDir.y, uWDir.x) * 0.5); float f5 = dot(q, d5) * 5.6 + W * 2.6; g += d5 * cos(f5) * 5.6 * 0.022 * (0.1 + w01) * (0.3 + 1.6 * gustW); }
-  if (uSea > 0.5) g += swell(q, uWT, vDep, vDist, vGr).yz;
+  if (uDisp > 0.01) g += swell(q, uWT, vDep, vDist, vGr).yz;
   // rain rings: a jittered grid of expanding circles
   float ringH = 0.0;
   if (uRain > 0.02) { for (int k = 0; k < 2; k++) { vec2 c = q * (1.5 + float(k) * 0.8) + float(k) * 17.0; vec2 id = floor(c), f = fract(c) - 0.5; float h1 = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5), h2 = fract(sin(dot(id, vec2(269.5, 183.3))) * 43758.5); vec2 o = (vec2(h1, h2) - 0.5) * 0.6; float ph = fract(T * (0.7 + 0.5 * h1) + h2); float rr = length(f - o), rad = ph * 0.5; float ring = exp(-pow((rr - rad) * 22.0, 2.0)) * (1.0 - ph) * step(h1, uRain * 0.9); g += normalize(f - o + 1e-4) * ring * 0.9; ringH += ring; } }
   vec3 N = normalize(vec3(-g.x, 1.0, -g.y)); vec3 V = normalize(cameraPosition - vWP);
   float fr = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 3.0);
-  vec4 rc = uTexMat * vec4(vWP, 1.0); vec3 refl = texture2D(uRefl, rc.xy / rc.w + g * 0.035 * (0.4 + 0.6 * V.y)).rgb;
+  vec4 rc = uTexMat * vec4(vWP, 1.0); vec3 refl = texture2D(uRefl, rc.xy / rc.w + g * 0.05 * (0.4 + 0.6 * V.y)).rgb;
   float rk = uReflAmt * (0.22 + 0.7 * fr) * (1.0 - 0.4 * uSea) * (1.0 - 0.35 * uStorm) * (0.5 + 0.5 * clamp(diffuseColor.a * 1.6, 0.0, 1.0)); outgoingLight = mix(outgoingLight, refl, rk);
   outgoingLight = mix(outgoingLight, uSky, fr * 0.7 * (1.0 - uReflAmt * 0.6) * (1.0 - 0.5 * uSea));
   outgoingLight *= 1.0 - 0.1 * gustW * min(uWindW, 1.5) * (1.0 - uSea) - 0.6 * uStorm * uSea;   // storm sea goes dark slate under the cloud
@@ -192,9 +192,15 @@ function buildWater(b, H) {
   vec3 Rv = reflect(-normalize(uSunDir), N); float sd = max(dot(Rv, V), 0.0);
   outgoingLight += uSun * (pow(sd, 60.0) * 0.5 + pow(sd, 600.0) * 3.0) * uGlint * uWFx;
   outgoingLight += uSky * 0.12 * smoothstep(0.35, 0.9, length(g)) * uWFx + vec3(0.8, 0.9, 1.0) * ringH * 0.10 * uWFx;
+  // wind made visible: cat's-paw patches (stretched along the wind, darker and rougher, strongest in gusts) and thin foam windrows lying along the wind
+  vec2 wdq = normalize(uWDir + vec2(1e-4)), prq = vec2(-wdq.y, wdq.x); float sa = dot(q, prq), sb = dot(q, wdq);
+  float cp = 0.5 + 0.5 * sin(sa * 2.6 + 1.8 * sin(sb * 0.5 - W * 1.2) + 1.2 * sin(sa * 0.9 + sb * 0.2)); cp *= cp; float ptc = cp * (0.2 + 1.0 * gustW) * clamp(w01 * 1.2, 0.0, 1.0);
+  outgoingLight = mix(outgoingLight, outgoingLight * 0.68 + uSky * 0.08, clamp(ptc * 0.95, 0.0, 0.65));
+  outgoingLight += uSky * 0.18 * smoothstep(0.55, 1.0, 0.5 + 0.5 * sin(sa * 7.0 + sb * 0.6 - W * 3.0)) * ptc;   // bright streaky glints inside the patch
   // shore foam: a lapping band where the water is shallow, broken up by noise, plus foam streaks on windy crests
   float lap = (0.12 + 0.08 * sin(T * 0.9 + q.x * 0.6 + q.y * 0.4)) * (1.0 + uSea * (2.5 + 2.0 * sin(T * 0.75 + q.x * 0.25 + q.y * 0.18))), nz = clamp(0.5 + 0.3 * sin(dot(q, vec2(2.3, 1.1)) + T * 0.6 + 2.0 * sin(q.y * 0.9)) + 0.25 * sin(dot(q, vec2(-1.3, 3.7)) - T * 0.8 + sin(q.x * 1.3)) + 0.2 * sin(dot(q, vec2(5.1, -2.9)) + T), 0.0, 1.0);   // non-grid noise (a product of sines made a checkerboard)
   float foam = (1.0 - smoothstep(lap * 0.35, lap + 0.1, vDep)) * smoothstep(0.0, 0.03, vDep) * (0.55 + 0.45 * nz);
+  foam = max(foam, smoothstep(0.88, 0.995, 0.5 + 0.5 * sin(sa * 1.15 + 2.2 * sin(sb * 0.22 - W * 0.9))) * smoothstep(0.3, 1.0, w01) * (0.25 + 0.75 * nz) * 0.6 * (0.35 + gustW));   // windrows
   foam = max(foam, smoothstep(0.7, 1.4, length(g)) * uWindW * 0.35 * nz * (1.0 - 0.75 * uStorm));
   foam = max(foam, uSea * smoothstep(0.9 - 0.2 * uStorm, 1.2 - 0.15 * uStorm, vH + 0.12 * nz * uWindW) * 0.8 * (0.5 + 0.5 * nz));   // whitecaps on the biggest crests
   if (uSurf > 0.5) { float sn = surfS(vDist, T); float crest = smoothstep(0.72, 0.96, sn) * smoothstep(2.0, 0.9, vDep) * smoothstep(0.05, 0.3, vDep);   // the wave breaks: a white lip along the crest, then a turbulent wash behind it that thins as it runs up the sand
