@@ -109,7 +109,7 @@ const PUSH = { value: Array.from({ length: 12 }, () => new THREE.Vector3()) };  
 const SOFT = /flower|grass|clover|fern|reed|weed|mushroom/i, _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion(), _ax = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 function bendSoft(dt) {   // flowers and tufts lean away from the avatar and spring back
   const av = S.avatar, ax = av.position.x, az = av.position.z; if (S.softFor !== S.placed) { S.softFor = S.placed; S.soft = S.placed.filter(p => SOFT.test(p.m)); for (const p of S.soft) { p.ln = 0; p.lx = 0; p.lz = 0; } }
-  for (const p of S.soft) { const dx = p.x - ax, dz = p.z - az, d = Math.hypot(dx, dz), want = d < 1.0 ? (1 - d / 1.0) * 0.12 : 0, rate = Math.min(1, dt * (want > p.ln ? 7 : 2.5)), k = d > 1e-4 ? 1 / d : 0;
+  for (const p of S.soft) { const dx = p.x - ax, dz = p.z - az, d = Math.hypot(dx, dz), want = d < 1.4 ? (1 - d / 1.4) * 0.55 : 0, rate = Math.min(1, dt * (want > p.ln ? 7 : 2.5)), k = d > 1e-4 ? 1 / d : 0;
     if (want > p.ln) { p.lx = dx * k; p.lz = dz * k; } p.ln += (want - p.ln) * rate; if (p.ln < 0.004 && !want) { if (p.ln) { p.ln = 0; p.obj.quaternion.setFromAxisAngle(_up, p.rot); } continue; }
     _ax.set(p.lz, 0, -p.lx); _qa.setFromAxisAngle(_ax, p.ln); _qb.setFromAxisAngle(_up, p.rot); p.obj.quaternion.copy(_qa).multiply(_qb); } }
 function pushTick(dt) {
