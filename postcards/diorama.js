@@ -333,8 +333,8 @@ const grMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, un
   vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
   fragmentShader: `uniform sampler2D tScene; uniform sampler2D tDepth; uniform vec2 uSun; uniform float uAmt; uniform vec3 uCol; varying vec2 vUv;
   void main() { vec4 c = texture2D(tScene, vUv); vec2 d = uSun - vUv; float dist = length(d * vec2(1.6, 1.0)); const int N = 64; vec2 stp = d / float(N) * 0.95; vec2 p = vUv + stp * fract(sin(dot(vUv, vec2(12.9898, 78.233))) * 43758.5453); float acc = 0.0, dec = 1.0;
-    for (int i = 0; i < N; i++) { p += stp; bool out_ = p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0; float sk = out_ ? 1.0 : step(0.99999, texture2D(tDepth, p).r); acc += sk * dec; dec *= 0.985; }
-    float ray = acc / float(N) * smoothstep(1.5, 0.0, dist); c.rgb += uCol * ray * uAmt * (0.35 + 0.65 * (1.0 - smoothstep(0.0, 1.2, dist)));
+    for (int i = 0; i < N; i++) { p += stp; bool out_ = p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0; float sk = out_ ? 1.0 : step(0.99999, texture2D(tDepth, p).r); acc += sk * dec; dec *= 0.992; }
+    float ray = pow(acc / float(N), 1.35) * smoothstep(1.7, 0.0, dist); c.rgb += uCol * ray * uAmt * (0.35 + 0.65 * (1.0 - smoothstep(0.0, 1.2, dist)));
     gl_FragColor = c;
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -344,7 +344,7 @@ const _sv = new THREE.Vector3();
 function renderMain() {
   if (S.gr > 0.02 && S.sunDirV) { _sv.copy(camera.position).addScaledVector(S.sunDirV, 200).project(camera); const ahead = _sv.z < 1 && S.sunDirV.dot(camera.getWorldDirection(new THREE.Vector3())) > -0.1;
     if (ahead) { const sz = renderer.getDrawingBufferSize(new THREE.Vector2()); if (grRT.width !== sz.x || grRT.height !== sz.y) grRT.setSize(sz.x, sz.y);
-      renderer.setRenderTarget(grRT); renderer.clear(); renderer.render(scene, camera); renderer.setRenderTarget(null); grMat.uniforms.uSun.value.set(_sv.x * 0.5 + 0.5, _sv.y * 0.5 + 0.5); grMat.uniforms.uAmt.value = S.gr * 2.6 * (S.grBoost || 1); renderer.render(grScene, grCam); return; } }
+      renderer.setRenderTarget(grRT); renderer.clear(); renderer.render(scene, camera); renderer.setRenderTarget(null); grMat.uniforms.uSun.value.set(_sv.x * 0.5 + 0.5, _sv.y * 0.5 + 0.5); grMat.uniforms.uAmt.value = S.gr * 6.5 * (S.grBoost || 1); renderer.render(grScene, grCam); return; } }
   renderer.render(scene, camera);
 }
 function reflectPass() {
@@ -446,7 +446,7 @@ function tick(dt) {
     a.lightColor = cm(a.lightColor, cd * 0.7); a.hemiSky = cm(a.hemiSky, cd); a.hemiGround = cm(a.hemiGround, cd * 0.6); a.fogColor = cm(a.fogColor, cd); a.sky = { zenith: cm(a.sky.zenith, cd * 0.5), horizon: cm(a.sky.horizon, cd * 0.7) }; a.lightIntensity *= 1 - 0.18 * cd; }
   WU.uCold.value = cd; S.sunDirV = (S.sunDirV || new THREE.Vector3()).set(...a.sunDir).normalize();
   { const hz = Math.max(ch.fog, ch.rain * 0.5, ch.snow * 0.3, S.fogUser ?? 0), ry0 = S.lite.ray == null ? 0 : Math.max(0, (S.lite.ray - 0.15) / 0.85), sunUp2 = sstep(0.0, 0.12, a.sunDir[1]);
-    S.gr = Math.max(sstep(0.04, 0.4, hz) * 0.9, ry0 * 1.1) * sunUp2 * (1 - 0.5 * Math.min(1, ch.cloud)) * (1 - 0.8 * ch.storm) * (1 - a.night); }
+    S.gr = Math.max(sstep(0.02, 0.3, hz) * 1.0, ry0 * 1.1) * sunUp2 * (1 - 0.5 * Math.min(1, ch.cloud)) * (1 - 0.8 * ch.storm) * (1 - a.night); }
   { const Lt = S.lite; if (Lt.warm != null && Math.abs(Lt.warm) > 0.01) { const w = Lt.warm, tg = w > 0 ? [1, 0.68, 0.38] : [0.55, 0.72, 1], k = Math.abs(w), mx = (c, f) => [c[0] + (tg[0] - c[0]) * f, c[1] + (tg[1] - c[1]) * f, c[2] + (tg[2] - c[2]) * f];   /* light panel: warm or cool the whole picture */
       a.lightColor = mx(a.lightColor, k * 0.6); a.hemiSky = mx(a.hemiSky, k * 0.45); a.hemiGround = mx(a.hemiGround, k * 0.35); a.fogColor = mx(a.fogColor, k * 0.5); a.sky = { zenith: mx(a.sky.zenith, k * 0.3), horizon: mx(a.sky.horizon, k * 0.6) }; }
     if (Lt.sunp != null) { a.lightIntensity *= Lt.sunp * 2; a.hemiIntensity *= 0.6 + 0.4 * Lt.sunp * 2; } }
