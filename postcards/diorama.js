@@ -484,6 +484,7 @@ for (const k of ['fog', 'rain', 'snow']) { $(k + 'btn').onclick = () => { const 
 $('litebtn').onclick = () => { S.litePre = ((S.litePre ?? -1) + 1); if (S.litePre >= LITE_PRESETS.length) { S.litePre = null; setLite({ ray: null, dust: null, warm: null, sunp: null }, null); } else setLite({ ray: null, dust: null, warm: null, sunp: null, ...LITE_PRESETS[S.litePre] }, S.litePre); };
 for (const [k, id] of [['ray', 'rays'], ['dust', 'dustw'], ['warm', 'warmw'], ['sunp', 'sunpw']]) $(id).oninput = (e) => { S.lite[k] = +e.target.value; document.body.classList.add('liteon'); };
 $('litereset').onclick = () => { S.litePre = null; setLite({ ray: null, dust: null, warm: null, sunp: null }, null); };
+$('slbtn').onclick = () => document.body.classList.toggle('sheet');
 $('windbtn').onclick = () => { audioInit(); const L = [0.25, 0.55, 0.8, 1]; const i = S.windUser == null ? -1 : L.findIndex(v => Math.abs(v - S.windUser) < 0.06); setWind(i >= 3 ? null : L[i + 1]); };
 $('sndbtn').onclick = () => { audioInit(); AU.muted = !AU.muted; $('sndbtn').textContent = AU.muted ? '🔇' : '🔊'; };
 addEventListener('pointerdown', () => { if (S.wx === 'storm' || S.windUser != null) audioInit(); }, { once: false });
