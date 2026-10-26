@@ -105,6 +105,13 @@ function buildTerrain(b, H, hasWater) {
 }
 
 // grass: instanced clumps of tapered blades that sway in the wind, tinted from the biome's ground colours
+const PUSH = { value: Array.from({ length: 12 }, () => new THREE.Vector3()) };   // avatar position + recent footprints (x, z, strength): grass is pressed away from them and springs back
+function pushTick(dt) {
+  const av = S.avatar, P = PUSH.value; if (!av) return; const tr = S.trail || (S.trail = []), x = av.position.x, z = av.position.z, l = tr[0];
+  if (!l || Math.hypot(l.x - x, l.z - z) > 0.3) { tr.unshift({ x, z, age: 0 }); if (tr.length > 11) tr.pop(); }
+  for (const q of tr) q.age += dt;
+  P[0].set(x, z, 1); for (let i = 1; i < 12; i++) { const q = tr[i - 1]; if (q) P[i].set(q.x, q.z, Math.max(0, 1 - q.age / 7) * 0.8); else P[i].z = 0; }
+}
 function buildGrass(b, H, hasWater, avoid) {
   const g = b.ground, A = rgb(g.a), B = rgb(g.b), rng = makeRng(b.seed * 13 + 3), pos = [], cl = [], uv = [];
   const BL = 7; for (let k = 0; k < BL; k++) {
@@ -113,11 +120,13 @@ function buildGrass(b, H, hasWater, avoid) {
   }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(cl, 3)); geo.setAttribute('aTip', new THREE.Float32BufferAttribute(uv, 1));
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide });
-  mat.onBeforeCompile = (sh) => { sh.uniforms.uTime = uTime; sh.uniforms.uWind = uWind; sh.uniforms.uWindDir = uWindDir; sh.uniforms.uCold = WU.uCold;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aTip; uniform float uCold; uniform float uTime; uniform float uWind; uniform vec2 uWindDir;\n' + GUST).replace('#include <color_vertex>', '#include <color_vertex>\n#ifdef USE_COLOR\n{ vec2 ipc = vec2(instanceMatrix[3][0], instanceMatrix[3][2]); vColor.rgb = mix(vColor.rgb, vec3(0.8, 0.9, 0.97), uCold * (0.15 + 0.4 * aTip)); vColor.rgb *= 1.0 + 0.22 * gustAt(ipc, normalize(uWindDir), uTime) * aTip * min(uWind, 2.2); }   // gust fronts show as lighter bands sweeping the grass\n#endif').replace('#include <begin_vertex>', `#include <begin_vertex>
+  mat.onBeforeCompile = (sh) => { sh.uniforms.uTime = uTime; sh.uniforms.uWind = uWind; sh.uniforms.uWindDir = uWindDir; sh.uniforms.uCold = WU.uCold; sh.uniforms.uPush = PUSH;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform vec3 uPush[12];\nattribute float aTip; uniform float uCold; uniform float uTime; uniform float uWind; uniform vec2 uWindDir;\n' + GUST).replace('#include <color_vertex>', '#include <color_vertex>\n#ifdef USE_COLOR\n{ vec2 ipc = vec2(instanceMatrix[3][0], instanceMatrix[3][2]); vColor.rgb = mix(vColor.rgb, vec3(0.8, 0.9, 0.97), uCold * (0.15 + 0.4 * aTip)); vColor.rgb *= 1.0 + 0.22 * gustAt(ipc, normalize(uWindDir), uTime) * aTip * min(uWind, 2.2); }   // gust fronts show as lighter bands sweeping the grass\n#endif').replace('#include <begin_vertex>', `#include <begin_vertex>
 { vec3 ip = vec3(instanceMatrix[3][0], 0.0, instanceMatrix[3][2]); float ph = ip.x * 0.7 + ip.z * 0.5; vec2 wd = normalize(uWindDir); float gu = gustAt(ip.xz, wd, uTime), w = uWind * (0.55 + 1.0 * gu);   // grass leans downwind and ripples as gust fronts pass
   vec3 dl = normalize(transpose(mat3(instanceMatrix)) * vec3(wd.x, 0.0, wd.y) + vec3(1e-5)); vec3 pl = vec3(-dl.z, 0.0, dl.x);
-  transformed += dl * aTip * 0.075 * w * (1.0 + 0.35 * sin(uTime * 1.8 + ph)) + pl * aTip * 0.04 * w * cos(uTime * 1.35 + ph * 1.3); transformed.y -= aTip * aTip * 0.012 * w * w; }`); };
+  transformed += dl * aTip * 0.075 * w * (1.0 + 0.35 * sin(uTime * 1.8 + ph)) + pl * aTip * 0.04 * w * cos(uTime * 1.35 + ph * 1.3); transformed.y -= aTip * aTip * 0.012 * w * w;
+  for (int i = 0; i < 12; i++) { vec3 pu = uPush[i]; if (pu.z > 0.001) { vec2 dd = ip.xz - pu.xy; float rr = length(dd), f = pu.z * (1.0 - smoothstep(0.1, 0.85, rr)); if (f > 0.001) { vec2 dn = dd / (rr + 0.04); vec3 pl2 = normalize(transpose(mat3(instanceMatrix)) * vec3(dn.x, 0.0, dn.y) + vec3(1e-5)); transformed += pl2 * aTip * 0.55 * f; transformed.y -= aTip * 0.3 * f; } } } }   // walking presses the grass aside, footprints spring back over ~7 s
+`); };
   const N = Math.round(26000 * (1 - (g.snow || 0) * 0.75)), mesh = new THREE.InstancedMesh(geo, mat, N), d = new THREE.Object3D(), c = new THREE.Color(); let n = 0;
   for (let t = 0; t < N * 4 && n < N; t++) {
     const a = rng() * 6.283, r = Math.pow(rng(), 0.62) * 24, x = Math.cos(a) * r, z = Math.sin(a) * r, h = H(x, z);
@@ -463,7 +472,7 @@ function tick(dt) {
   const L = a.lightDir; sun.position.set(L[0] * 70, Math.max(L[1], 0.08) * 70, L[2] * 70); sun.castShadow = L[1] > 0.02 && ch.fog < 0.9; scene.fog.color.setRGB(...a.fogColor); scene.fog.near = a.fogNear * QT.nearK[Q.near] * (1 + 1.2 * ch.storm); scene.fog.far = Math.min(a.fogFar * 0.8 * (1 + 1.0 * ch.storm), QT.far[Q.far] * (1 + 0.8 * ch.storm));   // polish v1: a storm darkens the picture but no longer swallows the distance renderer.toneMappingExposure = a.exposure * (1 - 0.3 * ch.storm);
   if (S.fogUser != null || S.rainUser != null || S.snowUser != null) { const x = Math.max(S.fogUser ?? 0, (S.rainUser ?? 0) * 0.7, (S.snowUser ?? 0) * 0.8); scene.fog.near = Math.max(1.5, scene.fog.near * (1 - 0.6 * x * x)); scene.fog.far = Math.max(scene.fog.near + 14, scene.fog.far * (1 - 0.5 * x * x)); }
   const su = sky.material.uniforms; { const fg = Math.min(1, ch.fog * 3 + ch.rain * 0.3), fz = Math.min(1, ch.fog * 4); su.zen.value.setRGB(...a.sky.zenith).lerp(scene.fog.color, fz); su.hor.value.setRGB(...a.sky.horizon).lerp(scene.fog.color, fg); if (fl > 0.02) { su.zen.value.lerp(new THREE.Color(0.85, 0.9, 1), Math.min(0.8, fl * 0.7)); su.hor.value.lerp(new THREE.Color(0.9, 0.93, 1), Math.min(0.8, fl * 0.7)); } } su.sunDir.value.set(...a.sunDir); su.sunCol.value.setRGB(...a.lightColor); su.moonDir.value.set(...a.moonDir); su.night.value = a.night; su.cloud.value = QT.cloud[Q.far] * Math.min(1, ch.cloud + ch.rain * 0.4) * (1 - Math.min(0.9, ch.fog * 1.5)); su.grey.value.setRGB(...a.fogColor).lerp(su.hor.value, 0.65).multiplyScalar(1.15); sky.position.copy(camera.position);
-  const wE = S.windUser ?? ch.wind; uWind.value = 1 + 1.4 * wE + 1.4 * ch.storm; windTick(dt, Math.min(1, wE + 0.5 * ch.storm)); if (S.breath) S.breath.update(dt, S.t, cd, Math.min(1, wE), S.avatar); rain.uniforms.uTime.value = S.t; rain.uniforms.uGround.value = -1.5; rain.setAmount(ch.rain); rain.uniforms.uColor.value.setRGB(...(night > 0.5 ? [0.45, 0.55, 0.75] : [0.74, 0.81, 0.9]));
+  const wE = S.windUser ?? ch.wind; uWind.value = 1 + 1.4 * wE + 1.4 * ch.storm; windTick(dt, Math.min(1, wE + 0.5 * ch.storm)); if (S.breath) S.breath.update(dt, S.t, cd, Math.min(1, wE), S.avatar); pushTick(dt); rain.uniforms.uTime.value = S.t; rain.uniforms.uGround.value = -1.5; rain.setAmount(ch.rain); rain.uniforms.uColor.value.setRGB(...(night > 0.5 ? [0.45, 0.55, 0.75] : [0.74, 0.81, 0.9]));
   snowfall.userData.update(S.t, dt, ch.snow, S.target);
   { const sunUp = sstep(0.04, 0.3, L[1]), amt = sunUp * (1 - night) * (1 - Math.min(1, ch.cloud * 1.2)) * (1 - ch.fog * 0.3) * (1 - ch.rain), dir = new THREE.Vector3(-L[0], -L[1], -L[2]).normalize(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     const ry = S.lite.ray, amtR = ry == null ? amt : Math.max(amt, Math.min(1, ry * 2.5) * sstep(0.02, 0.15, L[1])), rm = ry == null ? 1 : ry / 0.2; shaftMat.opacity = Math.min(0.85, QT.shaftOp[Q.vol] * amtR * rm); shaftMat.color.setRGB(...a.lightColor); shafts.visible = amtR > 0.02;
