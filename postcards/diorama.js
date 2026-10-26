@@ -106,7 +106,14 @@ function buildTerrain(b, H, hasWater) {
 
 // grass: instanced clumps of tapered blades that sway in the wind, tinted from the biome's ground colours
 const PUSH = { value: Array.from({ length: 12 }, () => new THREE.Vector3()) };   // avatar position + recent footprints (x, z, strength): grass is pressed away from them and springs back
+const SOFT = /flower|grass|clover|fern|reed|weed|mushroom/i, _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion(), _ax = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
+function bendSoft(dt) {   // flowers and tufts lean away from the avatar and spring back
+  const av = S.avatar, ax = av.position.x, az = av.position.z; if (S.softFor !== S.placed) { S.softFor = S.placed; S.soft = S.placed.filter(p => SOFT.test(p.m)); for (const p of S.soft) { p.ln = 0; p.lx = 0; p.lz = 0; } }
+  for (const p of S.soft) { const dx = p.x - ax, dz = p.z - az, d = Math.hypot(dx, dz), want = d < 1.4 ? (1 - d / 1.4) * 1.05 : 0, rate = Math.min(1, dt * (want > p.ln ? 9 : 1.6)), k = d > 1e-4 ? 1 / d : 0;
+    if (want > p.ln) { p.lx = dx * k; p.lz = dz * k; } p.ln += (want - p.ln) * rate; if (p.ln < 0.004 && !want) { if (p.ln) { p.ln = 0; p.obj.quaternion.setFromAxisAngle(_up, p.rot); } continue; }
+    _ax.set(p.lz, 0, -p.lx); _qa.setFromAxisAngle(_ax, p.ln); _qb.setFromAxisAngle(_up, p.rot); p.obj.quaternion.copy(_qa).multiply(_qb); } }
 function pushTick(dt) {
+  bendSoft(dt);
   const av = S.avatar, P = PUSH.value; if (!av) return; const tr = S.trail || (S.trail = []), x = av.position.x, z = av.position.z, l = tr[0];
   if (!l || Math.hypot(l.x - x, l.z - z) > 0.3) { tr.unshift({ x, z, age: 0 }); if (tr.length > 11) tr.pop(); }
   for (const q of tr) q.age += dt;
@@ -125,7 +132,7 @@ function buildGrass(b, H, hasWater, avoid) {
 { vec3 ip = vec3(instanceMatrix[3][0], 0.0, instanceMatrix[3][2]); float ph = ip.x * 0.7 + ip.z * 0.5; vec2 wd = normalize(uWindDir); float gu = gustAt(ip.xz, wd, uTime), w = uWind * (0.55 + 1.0 * gu);   // grass leans downwind and ripples as gust fronts pass
   vec3 dl = normalize(transpose(mat3(instanceMatrix)) * vec3(wd.x, 0.0, wd.y) + vec3(1e-5)); vec3 pl = vec3(-dl.z, 0.0, dl.x);
   transformed += dl * aTip * 0.075 * w * (1.0 + 0.35 * sin(uTime * 1.8 + ph)) + pl * aTip * 0.04 * w * cos(uTime * 1.35 + ph * 1.3); transformed.y -= aTip * aTip * 0.012 * w * w;
-  for (int i = 0; i < 12; i++) { vec3 pu = uPush[i]; if (pu.z > 0.001) { vec2 dd = ip.xz - pu.xy; float rr = length(dd), f = pu.z * (1.0 - smoothstep(0.1, 0.85, rr)); if (f > 0.001) { vec2 dn = dd / (rr + 0.04); vec3 pl2 = normalize(transpose(mat3(instanceMatrix)) * vec3(dn.x, 0.0, dn.y) + vec3(1e-5)); transformed += pl2 * aTip * 0.55 * f; transformed.y -= aTip * 0.3 * f; } } } }   // walking presses the grass aside, footprints spring back over ~7 s
+  for (int i = 0; i < 12; i++) { vec3 pu = uPush[i]; if (pu.z > 0.001) { vec2 dd = ip.xz - pu.xy; float rr = length(dd), f = pu.z * (1.0 - smoothstep(0.1, 1.1, rr)); if (f > 0.001) { vec2 dn = dd / (rr + 0.04); vec3 pl2 = normalize(transpose(mat3(instanceMatrix)) * vec3(dn.x, 0.0, dn.y) + vec3(1e-5)); transformed += pl2 * aTip * 0.8 * f; transformed.y -= aTip * 0.4 * f; } } } }   // walking presses the grass aside, footprints spring back over ~7 s
 `); };
   const N = Math.round(26000 * (1 - (g.snow || 0) * 0.75)), mesh = new THREE.InstancedMesh(geo, mat, N), d = new THREE.Object3D(), c = new THREE.Color(); let n = 0;
   for (let t = 0; t < N * 4 && n < N; t++) {
@@ -497,7 +504,7 @@ function walkStep(dt) {
   if (m > 0.05) { let nx = av.position.x + dx / m * WK.v * dt, nz = av.position.z + dz / m * WK.v * dt;
     // stay on the island, out of deep water, and slide around trees, rocks and props
     const r = Math.hypot(nx, nz); if (r > R - 3) { nx *= (R - 3) / r; nz *= (R - 3) / r; } if (S.hasWater && S.H(nx, nz) < -0.3) { nx = av.position.x; nz = av.position.z; }
-    for (const p of S.placed) { if (p.obj === av) continue; const rad = p.info.base.r * p.s, tall = p.info.size[1] * p.s; if (rad < 0.12 || tall < 0.35) continue; const ex = nx - p.x, ez = nz - p.z, d = Math.hypot(ex, ez), lim = rad * 0.85 + 0.3; if (d < lim && d > 1e-4) { nx = p.x + ex / d * lim; nz = p.z + ez / d * lim; } }
+    for (const p of S.placed) { if (p.obj === av || SOFT.test(p.m)) continue; const rad = p.info.base.r * p.s, tall = p.info.size[1] * p.s; if (rad < 0.12 || tall < 0.35) continue; const ex = nx - p.x, ez = nz - p.z, d = Math.hypot(ex, ez), lim = rad * 0.85 + 0.3; if (d < lim && d > 1e-4) { nx = p.x + ex / d * lim; nz = p.z + ez / d * lim; } }
     av.position.x = nx; av.position.z = nz; const ft = Math.atan2(dx, dz); let dA = ft - WK.face; dA = Math.atan2(Math.sin(dA), Math.cos(dA)); WK.face += dA * Math.min(1, dt * 10); av.rotation.y = WK.face; }
   av.position.y += (S.H(av.position.x, av.position.z) - av.position.y) * Math.min(1, dt * 14);
   S.target.x += (av.position.x - S.target.x) * Math.min(1, dt * 6); S.target.z += (av.position.z - S.target.z) * Math.min(1, dt * 6); S.target.y += (av.position.y + 0.9 - S.target.y) * Math.min(1, dt * 6);
