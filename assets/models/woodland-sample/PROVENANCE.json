@@ -1,0 +1,10 @@
+{
+  "updated_utc": "2026-10-23T21:18:38.009009+00:00",
+  "base": "Human Crafting Animations FREE included male model, Kevin Iglesias",
+  "base_url": "https://kevdev.itch.io/human-villager-animations-free",
+  "locomotion_source": "https://kevdev.itch.io/basic-motions-free",
+  "appearance": "Codex original procedural material assignment, hair, face features and backpack using woodland_appearance.py. Not a purchased character, external character download or Meshy/KayKit replacement mesh. Original vendor humanoid proportions and skeleton retained.",
+  "cost": "No purchase, subscription, new software or paid generation",
+  "scope": "Parent requested a free visible character then integration into Claude Forest. Separate test and owner handoff only; no authorization to publish the main family game in this task.",
+  "limits": "New appearance not yet parent approved. No chopping/sleep/bow/snare animations in free sample. Fishing remains motion-only. No physical iPad benchmark."
+}

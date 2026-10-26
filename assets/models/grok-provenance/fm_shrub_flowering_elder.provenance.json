@@ -1,0 +1,11 @@
+{
+  "creator": "Grok Bot",
+  "date": "2026-10-22",
+  "tool_or_model": "Blender 4.2.3 LTS procedural modelling (Python script); alpha-cut leaf/frond atlas drawn procedurally with NumPy inside the Blender script",
+  "prompt_or_source": "generator script C/scripts/build_c.py + c_overrides.py (reusing shared helpers fmlib.py, build_props.py, foliage.py), original, no external sources",
+  "licence_terms": "Original work made for Sacha; Blender output is owned by the user, see https://www.blender.org/about/license/",
+  "cost": "0",
+  "solid": false,
+  "footprint_m": 0.71,
+  "notes": "foliage: alpha MASK, double-sided; not solid (walk-through or soft collider)"
+}

@@ -1,0 +1,14 @@
+{
+  "creator": "Grok Bot",
+  "date": "2026-10-22",
+  "tool_or_model": "Blender 4.2.3 LTS procedural modelling + baked procedural textures (Python script)",
+  "prompt_or_source": "generator script build_props.py (+ fmlib.py, props_b.py, foliage.py), original, no external sources",
+  "licence_terms": "Original work made for Sacha; Blender output is owned by the user, see https://www.blender.org/about/license/",
+  "cost": "0",
+  "solid": true,
+  "footprint_m": [
+    1.12,
+    3.6
+  ],
+  "notes": "keel rests on y=0 (beached/on-ground pivot); sink to the waterline in-engine if placed in water. Mooring rope runs to a small stake in front of the bow."
+}

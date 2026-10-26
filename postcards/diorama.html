@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postcard Dioramas</title>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js"}}</script>
+<style>
+  :root { --paper:#f6efe0; --ink:#2b2a22; }
+  html, body { margin:0; height:100%; background:#10161a; overflow:hidden; font:14px/1.45 system-ui, sans-serif; color:#eef3ee; }
+  canvas { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
+  #tabs { position:fixed; top:10px; left:50%; transform:translateX(-50%); display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:94vw; }
+  button { font:inherit; border:0; border-radius:999px; padding:6px 13px; background:rgba(20,28,24,.72); color:#eef3ee; cursor:pointer; backdrop-filter:blur(6px); text-transform:capitalize; }
+  button.on { background:var(--paper); color:var(--ink); font-weight:600; }
+  #cap { position:fixed; left:14px; bottom:84px; max-width:min(420px,calc(100vw - 28px)); background:var(--paper); color:var(--ink); padding:12px 16px 10px; border-radius:4px; box-shadow:0 10px 30px rgba(0,0,0,.4); transform:rotate(-.8deg); }
+  #cap h2 { margin:0; font:italic 700 20px/1.2 Georgia, serif; } #cap p { margin:5px 0 0; font-size:13.5px; } #cap .pl { color:#6a6556; font-size:12px; margin:2px 0 6px; }
+  .tg span { display:inline-block; background:#e6dcc4; border-radius:999px; padding:1px 9px; margin:4px 4px 0 0; font-size:11.5px; }
+  #bar { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; background:rgba(20,28,24,.7); padding:8px 14px; border-radius:999px; backdrop-filter:blur(6px); max-width:96vw; }
+  #wx { display:flex; gap:4px; } #bar input[type=range] { width:150px; } #clock { min-width:96px; font-variant-numeric:tabular-nums; }
+  #loading { position:fixed; inset:0; display:grid; place-items:center; background:rgba(16,22,26,.7); font-size:18px; }
+  #set { position:fixed; right:14px; bottom:84px; width:260px; background:rgba(20,28,24,.86); backdrop-filter:blur(8px); padding:12px 14px; border-radius:10px; display:grid; gap:8px; font-size:13px; } #set[hidden] { display:none; } #set label { display:flex; justify-content:space-between; align-items:center; gap:8px; } #set select { background:#f6efe0; color:#2b2a22; border:0; border-radius:6px; padding:3px 6px; } #set div { display:flex; gap:6px; flex-wrap:wrap; } #set small { color:#aab8ad; font-size:11.5px; }
+  @media (max-width:640px) { #cap { bottom:128px; } }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="tabs"></div>
+<div id="cap"></div>
+<div id="bar">
+  <span id="clock"></span><input id="time" type="range" min="0" max="1" step="0.005" value="0.5" aria-label="Time of day">
+  <span id="wx"><button data-w="default">Its own</button><button data-w="clear">Clear</button><button data-w="cloudy">Cloudy</button><button data-w="fog">Fog</button><button data-w="rain">Rain</button><button data-w="snow">Snow</button></span>
+  <label><input id="spin" type="checkbox" checked> turn</label><button id="save">Save postcard</button>
+</div>
+<div id="loading">Loading the postcard…</div>
+<script type="module" src="./diorama.js"></script>
+</body>
+</html>

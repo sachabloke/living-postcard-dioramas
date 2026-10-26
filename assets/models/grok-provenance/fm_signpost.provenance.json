@@ -1,0 +1,15 @@
+{
+  "creator": "Grok Bot",
+  "date": "2026-10-22",
+  "tool_or_model": "Blender 4.2.3 LTS procedural modelling + baked procedural textures (Python script)",
+  "prompt_or_source": "generator script build_B.py (worker B) + shared helpers fmlib.py, props_b.py, build_props.py, original, no external sources",
+  "licence_terms": "Original work made for Sacha; Blender output is owned by the user, see https://www.blender.org/about/license/",
+  "cost": "0",
+  "solid": true,
+  "footprint_m": 0.12,
+  "notes": "collider: post only, radius ~0.12 m incl. base stones, centred at x=0.045, z=0.024. Arrow boards are blank so text/numbers can be added in-engine. 1024 px textures (prop is 1.8 m tall).",
+  "collider_centre_xz_m": [
+    0.045,
+    0.024
+  ]
+}

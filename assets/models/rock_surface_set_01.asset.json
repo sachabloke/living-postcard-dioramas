@@ -1,0 +1,417 @@
+{
+ "id": "rock_surface_set_01",
+ "version": "0.1.0",
+ "status": "workshop / needs review",
+ "base_designs": [
+  "boulder",
+  "slab",
+  "spire"
+ ],
+ "states": [
+  "bare",
+  "moss cap",
+  "snow cap"
+ ],
+ "style_family": "Living Postcard painterly-natural",
+ "purpose": "replace flat faceted rocks (woodland, rainforest, snow, coast); moss/snow are textured caps, not recoloured copies",
+ "creator": "Claude Sonnet 5.5 (procedural Blender 5.2.2 + numpy), 20 Oct 2026",
+ "licence": "Original procedural work made locally; no external assets, no paid generation.",
+ "editable_source": "assets/rock_surface_set_01/source/rock_surface_set_01.blend + tools/rocks.py (seeded) + tools/common.py",
+ "textures": "procedural: rock albedo+normal (strata, cracks, lichen), moss albedo+normal, snow albedo+normal; JPEG; 1024 (hi) / 512 rock + 256 caps (mobile); box-projected UVs, 1.6 m tile",
+ "tiers": {
+  "hi": "5,120-tri base (+cap), 1024 rock texture",
+  "mobile": "1,280-tri base (+cap), 512 rock / 256 cap textures"
+ },
+ "variants": {
+  "rock_boulder_bare_hi": {
+   "sha256": "1dba0c9050408bfca5e006623519ecf4f9d386e1735d4ceb1dc4ab351b2e783b",
+   "triangles": 5120,
+   "file_bytes": 2245240,
+   "texture_memory_mb_with_mips": 10.67,
+   "size_m": [
+    1.839,
+    1.208,
+    1.182
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 1
+  },
+  "rock_boulder_bare_mobile": {
+   "sha256": "e792ebc1421b384515b71a046b925987bac8eb3cee8897070eccacbdcef8e564",
+   "triangles": 1280,
+   "file_bytes": 563168,
+   "texture_memory_mb_with_mips": 2.67,
+   "size_m": [
+    1.779,
+    1.201,
+    1.162
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 1
+  },
+  "rock_boulder_moss_hi": {
+   "sha256": "095465c4fc8ac75a5686ac014f94ea6953e37a31368df135074b723594289c2d",
+   "triangles": 6335,
+   "file_bytes": 2829400,
+   "texture_memory_mb_with_mips": 13.33,
+   "size_m": [
+    1.881,
+    1.24,
+    1.231
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_boulder_moss_mobile": {
+   "sha256": "042099959db1d1e045e73f9f5764ad19c6bc5f51bc4e9de3bfa0449c84794452",
+   "triangles": 1571,
+   "file_bytes": 699980,
+   "texture_memory_mb_with_mips": 3.33,
+   "size_m": [
+    1.779,
+    1.217,
+    1.162
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_boulder_snow_hi": {
+   "sha256": "fe334ce099c53e4b74375e90f70f06918abcd71968333c4abf0699a794188fdb",
+   "triangles": 6286,
+   "file_bytes": 2605080,
+   "texture_memory_mb_with_mips": 13.33,
+   "size_m": [
+    1.839,
+    1.214,
+    1.188
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_boulder_snow_mobile": {
+   "sha256": "f7103943b5cb7234729e3b294e4c9ac6f2c49eddda5cd8afc09fad628ce8f497",
+   "triangles": 1559,
+   "file_bytes": 638208,
+   "texture_memory_mb_with_mips": 3.33,
+   "size_m": [
+    1.779,
+    1.201,
+    1.162
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_slab_bare_hi": {
+   "sha256": "356f9ca880b06f1160e49f8035e4bd9c831ced7d6e81d060801d15a2813d3030",
+   "triangles": 5120,
+   "file_bytes": 2244532,
+   "texture_memory_mb_with_mips": 10.67,
+   "size_m": [
+    2.937,
+    2.317,
+    0.629
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 1
+  },
+  "rock_slab_bare_mobile": {
+   "sha256": "cf44228b4e869dd8e7bb15eb68a6f442443b124600fb1fac6634469c64592389",
+   "triangles": 1280,
+   "file_bytes": 563744,
+   "texture_memory_mb_with_mips": 2.67,
+   "size_m": [
+    2.93,
+    2.261,
+    0.609
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 1
+  },
+  "rock_slab_moss_hi": {
+   "sha256": "dbec4724fb248861a93931594521f2473fa3a7048b47bf96288ce794ff037f24",
+   "triangles": 6570,
+   "file_bytes": 2836016,
+   "texture_memory_mb_with_mips": 13.33,
+   "size_m": [
+    2.937,
+    2.317,
+    0.714
+   ],
+   "min_z_m": -0.01,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_slab_moss_mobile": {
+   "sha256": "9956716c8f744532a0ffadcd790e45c66316647c676dfef98572eb9819c195e1",
+   "triangles": 1661,
+   "file_bytes": 705376,
+   "texture_memory_mb_with_mips": 3.33,
+   "size_m": [
+    2.93,
+    2.261,
+    0.67
+   ],
+   "min_z_m": -0.01,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_slab_snow_hi": {
+   "sha256": "670cb8e644693098b801cf0f22a65299c700c871703bd90b8874edcb7683e2db",
+   "triangles": 6586,
+   "file_bytes": 2610888,
+   "texture_memory_mb_with_mips": 13.33,
+   "size_m": [
+    2.937,
+    2.317,
+    0.649
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_slab_snow_mobile": {
+   "sha256": "7ec19cf4dd7b9abd12d1969352e74511687f14afb47fbf1db40f65fb9fb799e0",
+   "triangles": 1652,
+   "file_bytes": 640572,
+   "texture_memory_mb_with_mips": 3.33,
+   "size_m": [
+    2.93,
+    2.261,
+    0.609
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_spire_bare_hi": {
+   "sha256": "9386eb41aef39a078a02a4716f9d74ffb371c99651fde1c983bef312322e31c4",
+   "triangles": 5120,
+   "file_bytes": 2260824,
+   "texture_memory_mb_with_mips": 10.67,
+   "size_m": [
+    1.256,
+    1.275,
+    1.755
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 1
+  },
+  "rock_spire_bare_mobile": {
+   "sha256": "d571a0c3bafa876aa5b21229d6d2e2c707a81d9e69444268f4b966e62822bdb0",
+   "triangles": 1280,
+   "file_bytes": 566624,
+   "texture_memory_mb_with_mips": 2.67,
+   "size_m": [
+    1.256,
+    1.219,
+    1.738
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 1
+  },
+  "rock_spire_moss_hi": {
+   "sha256": "0ac06574177cd29af270a240de8a79c35cdcb9dabd12e0a62e570876364ea6ed",
+   "triangles": 6155,
+   "file_bytes": 2839376,
+   "texture_memory_mb_with_mips": 13.33,
+   "size_m": [
+    1.269,
+    1.277,
+    1.755
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_spire_moss_mobile": {
+   "sha256": "742653d4993b1ef350122d025c4841f983adcfaf59b71b2ce4f28a77310afaf3",
+   "triangles": 1525,
+   "file_bytes": 700520,
+   "texture_memory_mb_with_mips": 3.33,
+   "size_m": [
+    1.256,
+    1.219,
+    1.738
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_spire_snow_hi": {
+   "sha256": "7a4efdd541f9e7a3e5ebf70d8ed0e87ffdb7e9226956e851c2065d8730870d97",
+   "triangles": 6111,
+   "file_bytes": 2614288,
+   "texture_memory_mb_with_mips": 13.33,
+   "size_m": [
+    1.256,
+    1.275,
+    1.755
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_spire_snow_mobile": {
+   "sha256": "ebb807dec736b4275b4417ccfacea147f7e437158591c8191ceecd04ebfa63af",
+   "triangles": 1511,
+   "file_bytes": 638012,
+   "texture_memory_mb_with_mips": 3.33,
+   "size_m": [
+    1.256,
+    1.219,
+    1.738
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "materials": 2
+  },
+  "rock_boulder_bare_sand_hi": {
+   "sha256": "1ec6fbee947f4cfd0070ff394065ce4268dc45520b469a3ef7a494caf32be95e",
+   "triangles": 5120,
+   "file_bytes": 2390024,
+   "texture_memory_mb_with_mips": 10.67,
+   "size_m": [
+    1.839,
+    1.208,
+    1.182
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "palette": "sandstone"
+  },
+  "rock_boulder_bare_sand_mobile": {
+   "sha256": "e55b5322a87df5226ab396621b16f0f9da0b53b2c6bcdf09dc262ee49061bebc",
+   "triangles": 1280,
+   "file_bytes": 616352,
+   "texture_memory_mb_with_mips": 2.67,
+   "size_m": [
+    1.779,
+    1.201,
+    1.162
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "palette": "sandstone"
+  },
+  "rock_slab_bare_sand_hi": {
+   "sha256": "a8d1eb92cb810ede0d3c23151539b6c4103970ad8f1e2df18f2aa88457f71427",
+   "triangles": 5120,
+   "file_bytes": 2389316,
+   "texture_memory_mb_with_mips": 10.67,
+   "size_m": [
+    2.937,
+    2.317,
+    0.629
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "palette": "sandstone"
+  },
+  "rock_slab_bare_sand_mobile": {
+   "sha256": "df33102d74e41262d0522bcf9c8ed185988e15e21352483bc2b6e40b37a4c267",
+   "triangles": 1280,
+   "file_bytes": 616924,
+   "texture_memory_mb_with_mips": 2.67,
+   "size_m": [
+    2.93,
+    2.261,
+    0.609
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "palette": "sandstone"
+  },
+  "rock_spire_bare_sand_hi": {
+   "sha256": "54424253feae9bad6662a5348d20a5305c1dfb7639c9870cd43445d9d868c375",
+   "triangles": 5120,
+   "file_bytes": 2405604,
+   "texture_memory_mb_with_mips": 10.67,
+   "size_m": [
+    1.256,
+    1.275,
+    1.755
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "palette": "sandstone"
+  },
+  "rock_spire_bare_sand_mobile": {
+   "sha256": "da049343c40d5fc0de33c1e3548cbbbcef66b54d2d1cab9763034d910980388b",
+   "triangles": 1280,
+   "file_bytes": 619808,
+   "texture_memory_mb_with_mips": 2.67,
+   "size_m": [
+    1.256,
+    1.219,
+    1.738
+   ],
+   "min_z_m": 0.04,
+   "reimport_issues": [],
+   "palette": "sandstone"
+  }
+ },
+ "variant_status": {
+  "rock_boulder_bare_hi": "needs review",
+  "rock_boulder_bare_mobile": "needs review",
+  "rock_boulder_moss_hi": "needs review",
+  "rock_boulder_moss_mobile": "needs review",
+  "rock_boulder_snow_hi": "needs review",
+  "rock_boulder_snow_mobile": "needs review",
+  "rock_slab_bare_hi": "needs review",
+  "rock_slab_bare_mobile": "needs review",
+  "rock_slab_moss_hi": "needs review",
+  "rock_slab_moss_mobile": "needs review",
+  "rock_slab_snow_hi": "needs review",
+  "rock_slab_snow_mobile": "needs review",
+  "rock_spire_bare_hi": "needs review",
+  "rock_spire_bare_mobile": "needs review",
+  "rock_spire_moss_hi": "needs review",
+  "rock_spire_moss_mobile": "needs review",
+  "rock_spire_snow_hi": "needs review",
+  "rock_spire_snow_mobile": "needs review",
+  "rock_boulder_bare_sand_hi": "needs review (sandstone palette, 20 Oct 2026, for the v4 Whirlwind canyon)",
+  "rock_boulder_bare_sand_mobile": "needs review (sandstone palette, 20 Oct 2026, for the v4 Whirlwind canyon)",
+  "rock_slab_bare_sand_hi": "needs review (sandstone palette, 20 Oct 2026, for the v4 Whirlwind canyon)",
+  "rock_slab_bare_sand_mobile": "needs review (sandstone palette, 20 Oct 2026, for the v4 Whirlwind canyon)",
+  "rock_spire_bare_sand_hi": "needs review (sandstone palette, 20 Oct 2026, for the v4 Whirlwind canyon)",
+  "rock_spire_bare_sand_mobile": "needs review (sandstone palette, 20 Oct 2026, for the v4 Whirlwind canyon)"
+ },
+ "orientation": "glTF Y-up, metres, origin at ground, base 4 cm buried",
+ "collision_guidance": {
+  "boulder": "ellipsoid/box ~1.7x1.2 m footprint, 1.15 m high",
+  "slab": "box 2.7x2.2 m, 0.6 m high: low step, walkers may step on or treat as wall by game rule",
+  "spire": "cylinder r~0.6, 1.7 m high; solid"
+ },
+ "limits": [
+  "Each GLB embeds its own texture copy (standalone); share textures in-engine to save memory",
+  "Bare silhouettes still boxy; only 3 bases",
+  "Not tested in Three.js scenes yet; Blender re-import + Eevee only",
+  "Texture memory is calculated (RGBA+mips), not measured on a GPU",
+  "Run tools/fix_sidedness.py and tools/refresh_hashes.py after any rebuild; Blender's exporter otherwise ships opaque materials double-sided",
+  "Snow cap on the boulder is sparse (few top-facing smooth faces); slab and spire read well (cap smoothed 20 Oct 2026)",
+  "Sandstone palette (`rocks.py -- <tier> <dir> sand`): strong strata bands read slightly fur-like at close range; bare state only. Used in living-postcard-mobile-v4 'Whirlwind canyon' (mobile tier)."
+ ],
+ "approval": "none - workshop candidate",
+ "engine_checks": {
+  "three_js_import": {
+   "version": "0.186.1",
+   "browser": "headless Chrome, software GL (emulation, not a device)",
+   "result": "all variants parse; textures decode; no loader errors or warnings",
+   "files": 18,
+   "evidence": "evidence/three-import/*.png (daylight, dusk; *_adapted where the foliage adapter applies)",
+   "report": "three-import-check.json"
+  },
+  "winding_vs_normals": "checked with tools/winding_check.py; tube/shell inversions found and fixed in the generators on 20 Oct 2026 (trunks, branches, pine trunk, kelp stalk, staghorn, fan stem, turtle shell). Remaining intentional: double-sided cards with fixed normals (fins, kelp blades) and thin flippers",
+  "sidedness": "opaque materials exported single-sided via tools/fix_sidedness.py (run after every rebuild); alpha-masked cards and creature files stay double-sided"
+ }
+}

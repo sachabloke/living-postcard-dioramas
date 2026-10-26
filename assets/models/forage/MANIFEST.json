@@ -1,0 +1,1486 @@
+{
+ "title": "Forest foraging plants and ingredients",
+ "created": "2026-10-25",
+ "made_by": "Grok Bot worker (not the Forest Game Assets Creator bots)",
+ "licence": "Original procedural work made for this project; free to use in the game. No photos or third-party artwork copied.",
+ "cost_usd": 0,
+ "tool": "Blender 4.2.3 (free), headless scripts in scripts/",
+ "conventions": "Metres, glTF Y-up, pivot at base centre on the ground, transforms applied, no lights, no cameras, no textures (flat material colours), leaves double-sided.",
+ "budgets": {
+  "world_max_tris": 5000,
+  "ingredient_or_meal_max_tris": 1500,
+  "max_file_MB": 10
+ },
+ "disclaimer": "Stylised game plants. NOT a real-world foraging or identification guide. No health or medicinal claims.",
+ "world": {
+  "blackberry": {
+   "common": "Bramble / blackberry",
+   "scientific": "Rubus fruticosus agg.",
+   "habitat": "Woodland edges, hedges, scrub, clearings",
+   "seasons": {
+    "flower": "early summer",
+    "unripe": "mid-late summer (green/red berries)",
+    "ripe": "Jul-Oct (black berries)",
+    "winter": "winter (canes, few dull leaves)"
+   },
+   "id_features": [
+    "arching prickly canes",
+    "3-5 toothed leaflets per leaf",
+    "aggregate berry of drupelets, green -> red -> black"
+   ],
+   "sources": [
+    1,
+    2,
+    4
+   ],
+   "default_file": {
+    "file": "world/blackberry.glb",
+    "tris": 4971,
+    "size_m_xyz_blender_zup": [
+     1.6624,
+     1.398,
+     0.8421
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -0.8605,
+      -0.7093,
+      -0.0017
+     ],
+     "max": [
+      0.8019,
+      0.6887,
+      0.8404
+     ]
+    },
+    "materials": [
+     "ff_berry_black",
+     "ff_berry_red",
+     "ff_bramble_cane",
+     "ff_bramble_leaf",
+     "ff_bramble_prickle"
+    ],
+    "bytes": 288328,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0
+   },
+   "default_state": "ripe",
+   "states": {
+    "flower": {
+     "file": "world/seasons/blackberry__flower.glb",
+     "tris": 4191,
+     "size_m_xyz_blender_zup": [
+      1.6624,
+      1.398,
+      0.8218
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.8605,
+       -0.7093,
+       -0.0017
+      ],
+      "max": [
+       0.8019,
+       0.6887,
+       0.8201
+      ]
+     },
+     "materials": [
+      "ff_bramble_cane",
+      "ff_bramble_leaf",
+      "ff_bramble_petal",
+      "ff_bramble_prickle",
+      "ff_flower_centre"
+     ],
+     "bytes": 208272,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "canes",
+      "leaves_summer",
+      "flowers"
+     ]
+    },
+    "unripe": {
+     "file": "world/seasons/blackberry__unripe.glb",
+     "tris": 4971,
+     "size_m_xyz_blender_zup": [
+      1.6624,
+      1.398,
+      0.8393
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.8605,
+       -0.7093,
+       -0.0017
+      ],
+      "max": [
+       0.8019,
+       0.6887,
+       0.8376
+      ]
+     },
+     "materials": [
+      "ff_berry_green",
+      "ff_berry_red",
+      "ff_bramble_cane",
+      "ff_bramble_leaf",
+      "ff_bramble_prickle"
+     ],
+     "bytes": 288336,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "canes",
+      "leaves_summer",
+      "berries_unripe"
+     ]
+    },
+    "ripe": {
+     "file": "world/seasons/blackberry__ripe.glb",
+     "tris": 4971,
+     "size_m_xyz_blender_zup": [
+      1.6624,
+      1.398,
+      0.8421
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.8605,
+       -0.7093,
+       -0.0017
+      ],
+      "max": [
+       0.8019,
+       0.6887,
+       0.8404
+      ]
+     },
+     "materials": [
+      "ff_berry_black",
+      "ff_berry_red",
+      "ff_bramble_cane",
+      "ff_bramble_leaf",
+      "ff_bramble_prickle"
+     ],
+     "bytes": 288328,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "canes",
+      "leaves_summer",
+      "berries_ripe"
+     ]
+    },
+    "winter": {
+     "file": "world/seasons/blackberry__winter.glb",
+     "tris": 1797,
+     "size_m_xyz_blender_zup": [
+      1.6253,
+      1.3436,
+      0.8008
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.8358,
+       -0.7093,
+       -0.0017
+      ],
+      "max": [
+       0.7895,
+       0.6342,
+       0.7992
+      ]
+     },
+     "materials": [
+      "ff_bramble_cane",
+      "ff_bramble_leaf_winter",
+      "ff_bramble_prickle"
+     ],
+     "bytes": 97380,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "canes",
+      "leaves_winter"
+     ]
+    }
+   },
+   "toggle_file": {
+    "file": "world/seasons/blackberry__all_states_toggle.glb",
+    "tris": 8307,
+    "size_m_xyz_blender_zup": [
+     1.6624,
+     1.398,
+     0.8421
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -0.8605,
+      -0.7093,
+      -0.0017
+     ],
+     "max": [
+      0.8019,
+      0.6887,
+      0.8404
+     ]
+    },
+    "materials": [
+     "ff_berry_black",
+     "ff_berry_green",
+     "ff_berry_red",
+     "ff_bramble_cane",
+     "ff_bramble_leaf",
+     "ff_bramble_leaf_winter",
+     "ff_bramble_petal",
+     "ff_bramble_prickle",
+     "ff_flower_centre"
+    ],
+    "bytes": 505524,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0,
+    "parts": {
+     "blackberry__part__canes": 1041,
+     "blackberry__part__leaves_summer": 2250,
+     "blackberry__part__leaves_winter": 756,
+     "blackberry__part__flowers": 900,
+     "blackberry__part__berries_unripe": 1680,
+     "blackberry__part__berries_ripe": 1680
+    },
+    "note": "Contains every seasonal part as its own node. Show ONLY the groups listed for one state at a time. Total tris are above 5000 because all states are stacked; visible tris per state stay under budget."
+   },
+   "historical_food_use": "Verified: food finds in Saxon-period archaeobotanical records and listed as an Anglo-Saxon food (sources 1, 2). Not every Rubus microspecies identified.",
+   "harvest_part": "ripe fruit only (not leaf or stem)",
+   "source_script": "scripts/ff_species.py",
+   "icon": "icons/plant_blackberry.png",
+   "qa": {
+    "contact_sheet": "QA/blackberry__contact_sheet.png",
+    "turntable": "QA/blackberry__turntable.mp4"
+   }
+  },
+  "wild_strawberry": {
+   "common": "Wild strawberry",
+   "scientific": "Fragaria vesca",
+   "habitat": "Woodland edges, banks, clearings (low ground cover)",
+   "seasons": {
+    "flower": "spring-early summer (white 5-petal flowers)",
+    "unripe": "early summer",
+    "ripe": "summer (small red fruit, seeds on outside)",
+    "leaf_only": "rest of year"
+   },
+   "id_features": [
+    "low plant with three toothed leaflets",
+    "runners to new plantlets",
+    "white 5-petal flowers",
+    "small red fruit with seeds on the outside"
+   ],
+   "sources": [
+    1,
+    2,
+    5
+   ],
+   "default_file": {
+    "file": "world/wild_strawberry.glb",
+    "tris": 4141,
+    "size_m_xyz_blender_zup": [
+     1.1982,
+     0.9153,
+     0.1473
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -0.5894,
+      -0.4464,
+      -0.001
+     ],
+     "max": [
+      0.6088,
+      0.4689,
+      0.1463
+     ]
+    },
+    "materials": [
+     "ff_calyx",
+     "ff_straw_fruit",
+     "ff_straw_leaf",
+     "ff_straw_leaf_stalk",
+     "ff_straw_runner",
+     "ff_straw_seed"
+    ],
+    "bytes": 178204,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0
+   },
+   "default_state": "ripe",
+   "states": {
+    "flower": {
+     "file": "world/seasons/wild_strawberry__flower.glb",
+     "tris": 3910,
+     "size_m_xyz_blender_zup": [
+      1.1982,
+      0.9153,
+      0.1473
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.5894,
+       -0.4464,
+       -0.001
+      ],
+      "max": [
+       0.6088,
+       0.4689,
+       0.1463
+      ]
+     },
+     "materials": [
+      "ff_flower_centre",
+      "ff_straw_leaf",
+      "ff_straw_leaf_stalk",
+      "ff_straw_petal",
+      "ff_straw_runner"
+     ],
+     "bytes": 156388,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "leaves_runners",
+      "runners",
+      "flowers"
+     ]
+    },
+    "unripe": {
+     "file": "world/seasons/wild_strawberry__unripe.glb",
+     "tris": 4099,
+     "size_m_xyz_blender_zup": [
+      1.1982,
+      0.9153,
+      0.1473
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.5894,
+       -0.4464,
+       -0.001
+      ],
+      "max": [
+       0.6088,
+       0.4689,
+       0.1463
+      ]
+     },
+     "materials": [
+      "ff_calyx",
+      "ff_straw_fruit_unripe",
+      "ff_straw_leaf",
+      "ff_straw_leaf_stalk",
+      "ff_straw_runner",
+      "ff_straw_seed"
+     ],
+     "bytes": 174948,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "leaves_runners",
+      "runners",
+      "fruit_unripe"
+     ]
+    },
+    "ripe": {
+     "file": "world/seasons/wild_strawberry__ripe.glb",
+     "tris": 4141,
+     "size_m_xyz_blender_zup": [
+      1.1982,
+      0.9153,
+      0.1473
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.5894,
+       -0.4464,
+       -0.001
+      ],
+      "max": [
+       0.6088,
+       0.4689,
+       0.1463
+      ]
+     },
+     "materials": [
+      "ff_calyx",
+      "ff_straw_fruit",
+      "ff_straw_leaf",
+      "ff_straw_leaf_stalk",
+      "ff_straw_runner",
+      "ff_straw_seed"
+     ],
+     "bytes": 178204,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "leaves_runners",
+      "runners",
+      "fruit_ripe"
+     ]
+    },
+    "leaf_only": {
+     "file": "world/seasons/wild_strawberry__leaf_only.glb",
+     "tris": 3560,
+     "size_m_xyz_blender_zup": [
+      1.1982,
+      0.9153,
+      0.1473
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.5894,
+       -0.4464,
+       -0.001
+      ],
+      "max": [
+       0.6088,
+       0.4689,
+       0.1463
+      ]
+     },
+     "materials": [
+      "ff_straw_leaf",
+      "ff_straw_leaf_stalk",
+      "ff_straw_runner"
+     ],
+     "bytes": 135820,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "leaves_runners",
+      "runners"
+     ]
+    }
+   },
+   "toggle_file": {
+    "file": "world/seasons/wild_strawberry__all_states_toggle.glb",
+    "tris": 5030,
+    "size_m_xyz_blender_zup": [
+     1.1982,
+     0.9153,
+     0.1473
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -0.5894,
+      -0.4464,
+      -0.001
+     ],
+     "max": [
+      0.6088,
+      0.4689,
+      0.1463
+     ]
+    },
+    "materials": [
+     "ff_calyx",
+     "ff_flower_centre",
+     "ff_straw_fruit",
+     "ff_straw_fruit_unripe",
+     "ff_straw_leaf",
+     "ff_straw_leaf_stalk",
+     "ff_straw_petal",
+     "ff_straw_runner",
+     "ff_straw_seed"
+    ],
+    "bytes": 237208,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0,
+    "parts": {
+     "wild_strawberry__part__leaves_runners": 3336,
+     "wild_strawberry__part__runners": 224,
+     "wild_strawberry__part__flowers": 350,
+     "wild_strawberry__part__fruit_unripe": 539,
+     "wild_strawberry__part__fruit_ripe": 581
+    },
+    "note": "Contains every seasonal part as its own node. Show ONLY the groups listed for one state at a time. Total tris are above 5000 because all states are stacked; visible tris per state stay under budget."
+   },
+   "historical_food_use": "Verified: wild strawberry food finds at Saxon sites; strawberries listed as Anglo-Saxon food (sources 1, 2). Small fruit, few per plant.",
+   "harvest_part": "ripe fruit only",
+   "source_script": "scripts/ff_species.py",
+   "icon": "icons/plant_wild_strawberry.png",
+   "qa": {
+    "contact_sheet": "QA/wild_strawberry__contact_sheet.png",
+    "turntable": "QA/wild_strawberry__turntable.mp4"
+   }
+  },
+  "hazelnut": {
+   "common": "Hazel",
+   "scientific": "Corylus avellana",
+   "habitat": "Woodland understorey, hedges, coppice",
+   "seasons": {
+    "catkins": "late winter, before leaves (yellow catkins)",
+    "summer": "summer (green nuts in husks)",
+    "ripe": "Sep-Oct (brown nuts, yellowing leaves)",
+    "winter": "winter (bare stems)"
+   },
+   "id_features": [
+    "many stems from one base",
+    "rounded, pointed, double-toothed leaves",
+    "nuts in frilly leafy husks",
+    "yellow catkins in late winter (separate state)"
+   ],
+   "sources": [
+    1,
+    2,
+    3,
+    6
+   ],
+   "default_file": {
+    "file": "world/hazelnut.glb",
+    "tris": 4578,
+    "size_m_xyz_blender_zup": [
+     2.1029,
+     2.338,
+     2.7108
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -1.0452,
+      -1.2304,
+      -0.0071
+     ],
+     "max": [
+      1.0577,
+      1.1076,
+      2.7037
+     ]
+    },
+    "materials": [
+     "ff_hazel_bark",
+     "ff_hazel_husk_ripe",
+     "ff_hazel_leaf",
+     "ff_hazel_leaf_autumn",
+     "ff_hazel_shell"
+    ],
+    "bytes": 204380,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0
+   },
+   "default_state": "ripe",
+   "states": {
+    "catkins": {
+     "file": "world/seasons/hazelnut__catkins.glb",
+     "tris": 2730,
+     "size_m_xyz_blender_zup": [
+      2.0917,
+      2.1724,
+      2.7045
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -1.0465,
+       -1.1216,
+       -0.0071
+      ],
+      "max": [
+       1.0453,
+       1.0508,
+       2.6974
+      ]
+     },
+     "materials": [
+      "ff_hazel_bark",
+      "ff_hazel_catkin",
+      "ff_hazel_female"
+     ],
+     "bytes": 170716,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "stems",
+      "catkins"
+     ]
+    },
+    "summer": {
+     "file": "world/seasons/hazelnut__summer.glb",
+     "tris": 4578,
+     "size_m_xyz_blender_zup": [
+      2.1029,
+      2.338,
+      2.7108
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -1.0452,
+       -1.2304,
+       -0.0071
+      ],
+      "max": [
+       1.0577,
+       1.1076,
+       2.7037
+      ]
+     },
+     "materials": [
+      "ff_hazel_bark",
+      "ff_hazel_husk",
+      "ff_hazel_leaf",
+      "ff_hazel_nut_unripe"
+     ],
+     "bytes": 203564,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "stems",
+      "leaves_summer",
+      "nuts_unripe"
+     ]
+    },
+    "ripe": {
+     "file": "world/seasons/hazelnut__ripe.glb",
+     "tris": 4578,
+     "size_m_xyz_blender_zup": [
+      2.1029,
+      2.338,
+      2.7108
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -1.0452,
+       -1.2304,
+       -0.0071
+      ],
+      "max": [
+       1.0577,
+       1.1076,
+       2.7037
+      ]
+     },
+     "materials": [
+      "ff_hazel_bark",
+      "ff_hazel_husk_ripe",
+      "ff_hazel_leaf",
+      "ff_hazel_leaf_autumn",
+      "ff_hazel_shell"
+     ],
+     "bytes": 204380,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "stems",
+      "leaves_autumn",
+      "nuts_ripe"
+     ]
+    },
+    "winter": {
+     "file": "world/seasons/hazelnut__winter.glb",
+     "tris": 630,
+     "size_m_xyz_blender_zup": [
+      2.0661,
+      2.1449,
+      2.7045
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -1.033,
+       -1.1067,
+       -0.0071
+      ],
+      "max": [
+       1.0331,
+       1.0382,
+       2.6974
+      ]
+     },
+     "materials": [
+      "ff_hazel_bark"
+     ],
+     "bytes": 37528,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "stems"
+     ]
+    }
+   },
+   "toggle_file": {
+    "file": "world/seasons/hazelnut__all_states_toggle.glb",
+    "tris": 10626,
+    "size_m_xyz_blender_zup": [
+     2.1041,
+     2.338,
+     2.7108
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -1.0465,
+      -1.2304,
+      -0.0071
+     ],
+     "max": [
+      1.0577,
+      1.1076,
+      2.7037
+     ]
+    },
+    "materials": [
+     "ff_hazel_bark",
+     "ff_hazel_catkin",
+     "ff_hazel_female",
+     "ff_hazel_husk",
+     "ff_hazel_husk_ripe",
+     "ff_hazel_leaf",
+     "ff_hazel_leaf_autumn",
+     "ff_hazel_nut_unripe",
+     "ff_hazel_shell"
+    ],
+    "bytes": 495596,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0,
+    "parts": {
+     "hazelnut__part__stems": 630,
+     "hazelnut__part__leaves_summer": 2688,
+     "hazelnut__part__leaves_autumn": 2688,
+     "hazelnut__part__catkins": 2100,
+     "hazelnut__part__nuts_unripe": 1260,
+     "hazelnut__part__nuts_ripe": 1260
+    },
+    "note": "Contains every seasonal part as its own node. Show ONLY the groups listed for one state at a time. Total tris are above 5000 because all states are stacked; visible tris per state stay under budget."
+   },
+   "historical_food_use": "Verified: hazelnuts eaten in prehistory and Saxon contexts; Mesolithic heat treatment/drying interpreted archaeologically (sources 1, 2, 3).",
+   "harvest_part": "edible kernel (shell and husk removed)",
+   "source_script": "scripts/ff_species.py",
+   "icon": "icons/plant_hazelnut.png",
+   "qa": {
+    "contact_sheet": "QA/hazelnut__contact_sheet.png",
+    "turntable": "QA/hazelnut__turntable.mp4"
+   }
+  },
+  "water_mint": {
+   "common": "Water mint",
+   "scientific": "Mentha aquatica",
+   "habitat": "Wet ground: stream and pond margins, marsh (model includes a small wet-ground pad)",
+   "seasons": {
+    "leaf": "spring-summer",
+    "flower": "mid-late summer (rounded lilac flower heads)",
+    "winter": "winter (low shoots)"
+   },
+   "id_features": [
+    "square reddish-purple stems",
+    "opposite toothed leaves",
+    "rounded lilac/pink terminal flower heads"
+   ],
+   "sources": [
+    2,
+    7,
+    8,
+    9
+   ],
+   "caveat": "Early British (Anglo-Saxon) evidence for mint is genus-level only; M. aquatica specifically is not shown for that era.",
+   "default_file": {
+    "file": "world/water_mint.glb",
+    "tris": 3656,
+    "size_m_xyz_blender_zup": [
+     1.0138,
+     0.8064,
+     0.4632
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -0.5219,
+      -0.3866,
+      -0.0002
+     ],
+     "max": [
+      0.4919,
+      0.4198,
+      0.463
+     ]
+    },
+    "materials": [
+     "ff_mint_flower",
+     "ff_mint_leaf",
+     "ff_mint_stem",
+     "ff_wet_mud"
+    ],
+    "bytes": 160600,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0
+   },
+   "default_state": "flower",
+   "states": {
+    "leaf": {
+     "file": "world/seasons/water_mint__leaf.glb",
+     "tris": 3096,
+     "size_m_xyz_blender_zup": [
+      1.0138,
+      0.8064,
+      0.4336
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.5219,
+       -0.3866,
+       -0.0002
+      ],
+      "max": [
+       0.4919,
+       0.4198,
+       0.4334
+      ]
+     },
+     "materials": [
+      "ff_mint_leaf",
+      "ff_mint_stem",
+      "ff_wet_mud"
+     ],
+     "bytes": 116020,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "stems",
+      "leaves",
+      "habitat_wet_margin_pad"
+     ]
+    },
+    "flower": {
+     "file": "world/seasons/water_mint__flower.glb",
+     "tris": 3656,
+     "size_m_xyz_blender_zup": [
+      1.0138,
+      0.8064,
+      0.4632
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.5219,
+       -0.3866,
+       -0.0002
+      ],
+      "max": [
+       0.4919,
+       0.4198,
+       0.463
+      ]
+     },
+     "materials": [
+      "ff_mint_flower",
+      "ff_mint_leaf",
+      "ff_mint_stem",
+      "ff_wet_mud"
+     ],
+     "bytes": 160600,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "stems",
+      "leaves",
+      "flowers",
+      "habitat_wet_margin_pad"
+     ]
+    },
+    "winter": {
+     "file": "world/seasons/water_mint__winter.glb",
+     "tris": 324,
+     "size_m_xyz_blender_zup": [
+      1.0138,
+      0.8064,
+      0.0933
+     ],
+     "bounds_blender_zup_m": {
+      "min": [
+       -0.5219,
+       -0.3866,
+       0.0
+      ],
+      "max": [
+       0.4919,
+       0.4198,
+       0.0933
+      ]
+     },
+     "materials": [
+      "ff_mint_dead",
+      "ff_mint_leaf",
+      "ff_wet_mud"
+     ],
+     "bytes": 15952,
+     "validator": {
+      "errors": 0,
+      "warnings": 0
+     },
+     "lights": 0,
+     "cameras": 0,
+     "groups": [
+      "winter_shoots",
+      "habitat_wet_margin_pad"
+     ]
+    }
+   },
+   "toggle_file": {
+    "file": "world/seasons/water_mint__all_states_toggle.glb",
+    "tris": 3964,
+    "size_m_xyz_blender_zup": [
+     1.0138,
+     0.8064,
+     0.4632
+    ],
+    "bounds_blender_zup_m": {
+     "min": [
+      -0.5219,
+      -0.3866,
+      -0.0002
+     ],
+     "max": [
+      0.4919,
+      0.4198,
+      0.463
+     ]
+    },
+    "materials": [
+     "ff_mint_dead",
+     "ff_mint_flower",
+     "ff_mint_leaf",
+     "ff_mint_stem",
+     "ff_wet_mud"
+    ],
+    "bytes": 174668,
+    "validator": {
+     "errors": 0,
+     "warnings": 0
+    },
+    "lights": 0,
+    "cameras": 0,
+    "parts": {
+     "water_mint__part__stems": 560,
+     "water_mint__part__leaves": 2520,
+     "water_mint__part__flowers": 560,
+     "water_mint__part__winter_shoots": 308,
+     "water_mint__part__habitat_wet_margin_pad": 16
+    },
+    "note": "Contains every seasonal part as its own node. Show ONLY the groups listed for one state at a time. Total tris are above 5000 because all states are stacked; visible tris per state stay under budget."
+   },
+   "historical_food_use": "Partly verified: M. aquatica food/culinary use is documented today (sources 7, 8, 9). Early British (Anglo-Saxon) evidence is for mint at genus level only (source 2); which mint species was used in that era is UNCERTAIN, so do not claim M. aquatica or this infusion for that era.",
+   "harvest_part": "leaves (sprig)",
+   "source_script": "scripts/ff_species.py",
+   "icon": "icons/plant_water_mint.png",
+   "qa": {
+    "contact_sheet": "QA/water_mint__contact_sheet.png",
+    "turntable": "QA/water_mint__turntable.mp4"
+   }
+  }
+ },
+ "ingredients": {
+  "blackberry": {
+   "file": "ingredients/blackberry.glb",
+   "tris": 1215,
+   "size_m_xyz_blender_zup": [
+    0.0526,
+    0.0509,
+    0.0319
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.0247,
+     -0.0227,
+     0.0
+    ],
+    "max": [
+     0.0279,
+     0.0282,
+     0.0319
+    ]
+   },
+   "materials": [
+    "ff_berry_black",
+    "ff_calyx"
+   ],
+   "bytes": 96700,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "species": "blackberry",
+   "scientific": "Rubus fruticosus agg.",
+   "icon": "icons/ing_blackberry.png",
+   "source_script": "scripts/ff_items.py",
+   "historical_food_use": "Verified: food finds in Saxon-period archaeobotanical records and listed as an Anglo-Saxon food (sources 1, 2). Not every Rubus microspecies identified.",
+   "harvest_part": "ripe fruit only (not leaf or stem)"
+  },
+  "wild_strawberry": {
+   "file": "ingredients/wild_strawberry.glb",
+   "tris": 428,
+   "size_m_xyz_blender_zup": [
+    0.0502,
+    0.0373,
+    0.0179
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.0255,
+     -0.0164,
+     0.0
+    ],
+    "max": [
+     0.0247,
+     0.0209,
+     0.0179
+    ]
+   },
+   "materials": [
+    "ff_calyx",
+    "ff_straw_fruit",
+    "ff_straw_seed"
+   ],
+   "bytes": 32248,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "species": "wild_strawberry",
+   "scientific": "Fragaria vesca",
+   "icon": "icons/ing_wild_strawberry.png",
+   "source_script": "scripts/ff_items.py",
+   "historical_food_use": "Verified: wild strawberry food finds at Saxon sites; strawberries listed as Anglo-Saxon food (sources 1, 2). Small fruit, few per plant.",
+   "harvest_part": "ripe fruit only"
+  },
+  "hazelnut_kernel": {
+   "file": "ingredients/hazelnut_kernel.glb",
+   "tris": 360,
+   "size_m_xyz_blender_zup": [
+    0.0279,
+    0.0262,
+    0.0106
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.014,
+     -0.012,
+     0.0
+    ],
+    "max": [
+     0.0139,
+     0.0141,
+     0.0106
+    ]
+   },
+   "materials": [
+    "ff_hazel_kernel"
+   ],
+   "bytes": 22028,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "species": "hazelnut",
+   "scientific": "Corylus avellana",
+   "icon": "icons/ing_hazelnut_kernel.png",
+   "source_script": "scripts/ff_items.py",
+   "historical_food_use": "Verified: hazelnuts eaten in prehistory and Saxon contexts; Mesolithic heat treatment/drying interpreted archaeologically (sources 1, 2, 3).",
+   "harvest_part": "edible kernel (shell and husk removed)"
+  },
+  "hazelnut_in_shell": {
+   "file": "ingredients/hazelnut_in_shell.glb",
+   "tris": 440,
+   "size_m_xyz_blender_zup": [
+    0.0363,
+    0.0616,
+    0.0297
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.018,
+     -0.0106,
+     0.0
+    ],
+    "max": [
+     0.0183,
+     0.051,
+     0.0297
+    ]
+   },
+   "materials": [
+    "ff_hazel_husk_ripe",
+    "ff_hazel_scar",
+    "ff_hazel_shell"
+   ],
+   "bytes": 28700,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "species": "hazelnut",
+   "scientific": "Corylus avellana",
+   "icon": "icons/ing_hazelnut_in_shell.png",
+   "source_script": "scripts/ff_items.py",
+   "historical_food_use": "Verified: hazelnuts eaten in prehistory and Saxon contexts; Mesolithic heat treatment/drying interpreted archaeologically (sources 1, 2, 3).",
+   "harvest_part": "whole nut in shell: must be shelled before eating or cooking (shelling stage)"
+  },
+  "water_mint_sprig": {
+   "file": "ingredients/water_mint_sprig.glb",
+   "tris": 248,
+   "size_m_xyz_blender_zup": [
+    0.1207,
+    0.0849,
+    0.1023
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.0552,
+     -0.0424,
+     0.0
+    ],
+    "max": [
+     0.0655,
+     0.0424,
+     0.1023
+    ]
+   },
+   "materials": [
+    "ff_mint_leaf",
+    "ff_mint_stem"
+   ],
+   "bytes": 9940,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "species": "water_mint",
+   "scientific": "Mentha aquatica",
+   "icon": "icons/ing_water_mint_sprig.png",
+   "source_script": "scripts/ff_items.py",
+   "historical_food_use": "Partly verified: M. aquatica food/culinary use is documented today (sources 7, 8, 9). Early British (Anglo-Saxon) evidence is for mint at genus level only (source 2); which mint species was used in that era is UNCERTAIN, so do not claim M. aquatica or this infusion for that era.",
+   "harvest_part": "leaves (sprig)"
+  }
+ },
+ "meals": {
+  "toasted_hazelnuts": {
+   "file": "meals/toasted_hazelnuts.glb",
+   "tris": 1288,
+   "size_m_xyz_blender_zup": [
+    0.2632,
+    0.595,
+    0.0764
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.1316,
+     -0.4325,
+     0.0
+    ],
+    "max": [
+     0.1316,
+     0.1625,
+     0.0764
+    ]
+   },
+   "materials": [
+    "ff_hazel_kernel",
+    "ff_hazel_kernel_toasted",
+    "ff_pan_darkmetal",
+    "ff_pan_darkwood",
+    "ff_pan_metal"
+   ],
+   "bytes": 83996,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "recipe": "shelled hazelnut kernel x2, warmed/toasted in a pan over an existing fire (game units)",
+   "inputs": [
+    {
+     "item": "hazelnut_kernel",
+     "qty": 2,
+     "note": "kernel only; shelling is a separate earlier step"
+    }
+   ],
+   "stages": [
+    "gather ripe hazelnut_in_shell",
+    "shell -> hazelnut_kernel (separate stage, no fire)",
+    "toast kernels in pan at an existing fire/cookware station"
+   ],
+   "station": "existing fire + cookware",
+   "label": "Historically supported nut processing; game adaptation",
+   "notes": "Heat-treating/drying hazelnuts is supported archaeologically (source 3, interpretation, not a written recipe). Quantities and any cooking timer are game choices, NOT historical. Shells, husks and hazel leaves are never food. Pan mesh reused from the original Grok elf-character/props/cooking_pan.glb.",
+   "exactPeriodRecipe": false,
+   "icon": "icons/meal_toasted_hazelnuts.png",
+   "source_script": "scripts/ff_items.py"
+  },
+  "woodland_fruit_bowl": {
+   "file": "meals/woodland_fruit_bowl.glb",
+   "tris": 1292,
+   "size_m_xyz_blender_zup": [
+    0.13,
+    0.1267,
+    0.055
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.065,
+     -0.0634,
+     0.0
+    ],
+    "max": [
+     0.065,
+     0.0634,
+     0.055
+    ]
+   },
+   "materials": [
+    "ff_berry_black",
+    "ff_calyx",
+    "ff_hazel_kernel",
+    "ff_straw_fruit",
+    "ff_straw_seed",
+    "ff_wood_bowl"
+   ],
+   "bytes": 93024,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "recipe": "ripe blackberry x2 + ripe wild strawberry x1 + shelled hazelnut kernel x1, no fire (game units)",
+   "inputs": [
+    {
+     "item": "blackberry",
+     "qty": 2
+    },
+    {
+     "item": "wild_strawberry",
+     "qty": 1
+    },
+    {
+     "item": "hazelnut_kernel",
+     "qty": 1
+    }
+   ],
+   "stages": [
+    "combine in bowl"
+   ],
+   "station": "none (no heat)",
+   "label": "Game combination of historically used foods; no exact period recipe claimed",
+   "notes": "Each food is evidenced as eaten (sources 1-2); the combination is a game invention. No sugar, cream or oats. Original lathe-turned wooden bowl (new mesh, no reusable original bowl existed).",
+   "exactPeriodRecipe": false,
+   "icon": "icons/meal_woodland_fruit_bowl.png",
+   "source_script": "scripts/ff_items.py"
+  },
+  "mint_infusion": {
+   "file": "meals/mint_infusion.glb",
+   "tris": 420,
+   "size_m_xyz_blender_zup": [
+    0.072,
+    0.0702,
+    0.1186
+   ],
+   "bounds_blender_zup_m": {
+    "min": [
+     -0.036,
+     -0.0351,
+     0.0
+    ],
+    "max": [
+     0.036,
+     0.0351,
+     0.1186
+    ]
+   },
+   "materials": [
+    "ff_infusion",
+    "ff_mint_leaf",
+    "ff_mint_stem",
+    "ff_wood_bowl"
+   ],
+   "bytes": 20080,
+   "validator": {
+    "errors": 0,
+    "warnings": 0
+   },
+   "lights": 0,
+   "cameras": 0,
+   "recipe": "identified water mint leaves (sprig) + game-safe water, in a suitable vessel with heat (game units)",
+   "inputs": [
+    {
+     "item": "water_mint_sprig",
+     "qty": 1
+    },
+    {
+     "item": "safe_water",
+     "qty": 1,
+     "note": "must be the game existing safe/boiled-water state; gate the recipe as unavailable if none exists"
+    }
+   ],
+   "stages": [
+    "heat safe water in a suitable vessel",
+    "steep mint leaves"
+   ],
+   "station": "existing fire + vessel",
+   "label": "Traditional culinary herb preparation; exact early British recipe not established",
+   "notes": "River or stream water is never automatically safe. M. aquatica culinary/drink use is documented in modern/other-region botanical sources (sources 7, 9); early British evidence is for mint at genus level only (source 2). No health or medicinal claims.",
+   "exactPeriodRecipe": false,
+   "icon": "icons/meal_mint_infusion.png",
+   "source_script": "scripts/ff_items.py"
+  }
+ },
+ "icons": [
+  "icons/ing_blackberry.png",
+  "icons/ing_hazelnut_in_shell.png",
+  "icons/ing_hazelnut_kernel.png",
+  "icons/ing_water_mint_sprig.png",
+  "icons/ing_wild_strawberry.png",
+  "icons/meal_mint_infusion.png",
+  "icons/meal_toasted_hazelnuts.png",
+  "icons/meal_woodland_fruit_bowl.png",
+  "icons/plant_blackberry.png",
+  "icons/plant_hazelnut.png",
+  "icons/plant_water_mint.png",
+  "icons/plant_wild_strawberry.png"
+ ],
+ "qa": {
+  "import_check": "QA/import_check.json",
+  "validator": "QA/validator.json",
+  "contact_sheets": [
+   "QA/blackberry__contact_sheet.png",
+   "QA/hazelnut__contact_sheet.png",
+   "QA/icons__contact_sheet.png",
+   "QA/ingredients_meals__contact_sheet.png",
+   "QA/water_mint__contact_sheet.png",
+   "QA/wild_strawberry__contact_sheet.png"
+  ],
+  "turntables": [
+   "QA/blackberry__turntable.mp4",
+   "QA/hazelnut__turntable.mp4",
+   "QA/ingredients__turntable.mp4",
+   "QA/meals__turntable.mp4",
+   "QA/water_mint__turntable.mp4",
+   "QA/wild_strawberry__turntable.mp4"
+  ]
+ },
+ "sources": "brief/SOURCES.txt (copy of outputs/forest-foraging-species/SOURCES.txt, numbered 1-9). Historical food use is counted as verified ONLY from that file.",
+ "evidence_rules": [
+  "Historical food use: verified only from SOURCES.txt.",
+  "All three recipes are game/traditional adaptations: exactPeriodRecipe=false; quantities and timings are game units.",
+  "Mint: early British evidence is genus-level only; species used in a given era is uncertain.",
+  "No health or medicinal claims.",
+  "No jam or crumble.",
+  "No fixed historical era for the whole game has been established."
+ ],
+ "species_json_map": {
+  "note": "Stable IDs from brief/species.json -> files here",
+  "ingredientId": {
+   "blackberry": "ingredients/blackberry.glb",
+   "wild_strawberry": "ingredients/wild_strawberry.glb",
+   "hazelnut": "ingredients/hazelnut_kernel.glb (shelled kernel; hazelnut_in_shell.glb is the pre-shelling stage)",
+   "water_mint": "ingredients/water_mint_sprig.glb"
+  },
+  "assetKey": {
+   "blackberry": "world/blackberry.glb (+ world/seasons/blackberry__*.glb)",
+   "wild_strawberry": "world/wild_strawberry.glb (+ world/seasons/wild_strawberry__*.glb)",
+   "hazelnut": "world/hazelnut.glb (+ world/seasons/hazelnut__*.glb)",
+   "water_mint": "world/water_mint.glb (+ world/seasons/water_mint__*.glb)"
+  },
+  "recipe": {
+   "toasted_hazelnuts": "meals/toasted_hazelnuts.glb",
+   "woodland_fruit_bowl": "meals/woodland_fruit_bowl.glb",
+   "mint_infusion": "meals/mint_infusion.glb"
+  }
+ },
+ "materials_note": "glTF PBR metallic-roughness materials with flat base colours; no image textures (atlas-friendly, can be swapped to a Synty palette).",
+ "seasonality_note": "If the game has no real season system, present states as a seasonal-specimen study, not year-round harvests."
+}

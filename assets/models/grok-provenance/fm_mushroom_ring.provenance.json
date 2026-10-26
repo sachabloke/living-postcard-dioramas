@@ -1,0 +1,10 @@
+{
+  "creator": "Grok Bot",
+  "date": "2026-10-22",
+  "tool_or_model": "Blender 4.2.3 LTS procedural modelling + baked procedural textures (Python script)",
+  "prompt_or_source": "generator script build_props.py (+ fmlib.py, foliage.py), original, no external sources",
+  "licence_terms": "Original work made for Sacha; Blender output is owned by the user, see https://www.blender.org/about/license/",
+  "cost": "0",
+  "solid": false,
+  "footprint_m": 0.82
+}

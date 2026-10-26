@@ -1,0 +1,15 @@
+{
+  "creator": "Grok Bot",
+  "date": "2026-10-22",
+  "tool_or_model": "Blender 4.2.3 LTS procedural modelling + baked procedural textures (Python script)",
+  "prompt_or_source": "generator script build_B.py (worker B) + shared helpers fmlib.py, props_b.py, build_props.py, original, no external sources",
+  "licence_terms": "Original work made for Sacha; Blender output is owned by the user, see https://www.blender.org/about/license/",
+  "cost": "0",
+  "solid": true,
+  "footprint_m": 0.12,
+  "notes": "origin = bottom-centre of the whole bounding box; the post itself stands at x=-0.20, z=-0.02 (collider: radius ~0.12 m around that point). The lantern hangs on an arm towards +X at ~1.6 m. Panes use a separate emissive amber material (no texture, no light object) so the game can toggle the glow. 1024 px textures (prop is 2.1 m tall).",
+  "collider_centre_xz_m": [
+    -0.2,
+    -0.02
+  ]
+}

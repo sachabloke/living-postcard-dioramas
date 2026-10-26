@@ -1,0 +1,14 @@
+{
+  "creator": "Grok Bot",
+  "date": "2026-10-22",
+  "tool_or_model": "Blender 4.2.3 LTS procedural modelling + baked procedural textures (Python script)",
+  "prompt_or_source": "generator script build_B.py (worker B) + shared helpers fmlib.py, props_b.py, build_props.py, original, no external sources",
+  "licence_terms": "Original work made for Sacha; Blender output is owned by the user, see https://www.blender.org/about/license/",
+  "cost": "0",
+  "solid": true,
+  "footprint_m": [
+    4.6,
+    2.13
+  ],
+  "notes": "hero prop. Walkway runs along X (4.6 m long), arch faces +/-Z (2.13 m wide); arch opening 2.6 m wide x 1.1 m high; deck 1.30 m at the ends rising to 1.68 m mid-span, parapets 0.5 m. Collider: solid box minus the arch opening; deck walkable between the parapets."
+}
