@@ -170,7 +170,7 @@ function buildWater(b, H) {
   mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, WU, { uTime }); sh.uniforms.uSea = { value: isSea ? 1 : 0 }; sh.uniforms.uDisp = { value: isSea ? 1 : b.relief.style === 'lake' ? 0.22 : b.relief.style === 'marsh' ? 0.12 : 0 }; /* lakes and marshes heave a little with the wind too */ sh.uniforms.uSurf = { value: isSea ? 1 : 0 }; sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; attribute float aDepth; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; attribute float aDist; attribute vec2 aGr; uniform vec2 uWDir; uniform float uWT; uniform float uWindW; uniform float uDisp; uniform float uTime; uniform float uSea; uniform float uSurf; uniform float uStorm;' + SWELL).replace('#include <begin_vertex>', '#include <begin_vertex>\nvDep = aDepth; vDist = aDist; vGr = aGr; vH = 0.0; if (uDisp > 0.01) { vec3 sw = swell((modelMatrix * vec4(transformed, 1.0)).xz, uWT, aDepth, aDist, aGr); transformed.y += sw.x; vH = sw.x; } vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying float vDep; varying float vH; varying float vDist; varying vec2 vGr; uniform vec2 uWDir; uniform float uWT; uniform float uDisp; uniform float uStorm; uniform float uSea; uniform float uSurf; uniform vec3 uSunDir; uniform float uRain; uniform float uWindW; uniform float uWFx; uniform vec3 uSky;' + SWELL + ' uniform vec3 uSun; uniform float uGlint; uniform float uTime; uniform sampler2D uRefl; uniform mat4 uTexMat; uniform float uReflAmt;').replace('#include <opaque_fragment>', `
   vec2 q = vWP.xz; float T = uTime; float gustW = 0.5 + 0.5 * sin(dot(q, normalize(uWDir)) * 0.11 - T * 1.5 + 1.3 * sin(dot(q, vec2(-uWDir.y, uWDir.x)) * 0.07)); gustW *= gustW;   // the same gust front that bends the trees; it ruffles the water as it passes
-  float w01 = clamp(uWindW - 0.5, 0.0, 1.5), W = uWT; float ch = (0.3 + 1.7 * w01) * (1.0 + 1.0 * uSea) * (1.0 + 0.8 * uStorm) * (0.7 + 0.8 * gustW);   // calm water is nearly still; more wind, bigger chop, and the gust fronts ruffle it
+  float wfoamL = 0.0; float w01 = clamp(uWindW - 0.5, 0.0, 1.5), W = uWT; float ch = (0.3 + 1.7 * w01) * (1.0 + 1.0 * uSea) * (1.0 + 0.8 * uStorm) * (0.7 + 0.8 * gustW);   // calm water is nearly still; more wind, bigger chop, and the gust fronts ruffle it
   // wave normal: five travelling waves (long swell to short chop) plus fine ripple; amplitude follows the wind
   vec2 g = vec2(0.0);
   { vec2 d1 = normalize(uWDir + vec2(-uWDir.y, uWDir.x) * 0.2); float f1 = dot(q, d1) * 0.55 + W * 0.9; g += d1 * cos(f1) * 0.55 * 0.5 * ch;
@@ -197,9 +197,14 @@ function buildWater(b, H) {
   float cp = 0.5 + 0.5 * sin(sa * 2.6 + 1.8 * sin(sb * 0.5 - W * 1.2) + 1.2 * sin(sa * 0.9 + sb * 0.2)); cp *= cp; float ptc = cp * (0.2 + 1.0 * gustW) * clamp(w01 * 1.2, 0.0, 1.0);
   outgoingLight = mix(outgoingLight, outgoingLight * 0.68 + uSky * 0.08, clamp(ptc * 0.95, 0.0, 0.65));
   outgoingLight += uSky * 0.18 * smoothstep(0.55, 1.0, 0.5 + 0.5 * sin(sa * 7.0 + sb * 0.6 - W * 3.0)) * ptc;   // bright streaky glints inside the patch
+  // dashes of wind-whipped foam that visibly travel downwind in thin lanes (different lanes run at different speeds); at higher wind they are everywhere
+  { float lane = floor(sa * 2.4), lh = fract(sin(lane * 91.7) * 43758.5), u = sb * 0.14 - W * (0.35 + 0.5 * lh) + lh * 7.0, f = fract(u), dash = smoothstep(0.0, 0.04, f) * (1.0 - smoothstep(0.05, 0.3, f)), laneM = smoothstep(0.30, 0.5, 0.5 - abs(fract(sa * 2.4) - 0.5)), on = step(0.55 - 0.4 * w01, lh);
+    float dsh = dash * laneM * on * smoothstep(0.08, 0.5, w01) * (0.45 + 0.8 * gustW); outgoingLight = mix(outgoingLight, vec3(0.95, 0.98, 1.0), clamp(dsh * 0.65, 0.0, 0.7)); }
+  if (uSea < 0.5 && uDisp > 0.01) { float cn = vH / max(1e-4, uDisp * (0.15 + 1.1 * w01) * 1.2); wfoamL = smoothstep(0.65, 1.0, cn) * smoothstep(0.3, 0.9, w01) * 0.7 * (0.5 + gustW); }
   // shore foam: a lapping band where the water is shallow, broken up by noise, plus foam streaks on windy crests
   float lap = (0.12 + 0.08 * sin(T * 0.9 + q.x * 0.6 + q.y * 0.4)) * (1.0 + uSea * (2.5 + 2.0 * sin(T * 0.75 + q.x * 0.25 + q.y * 0.18))), nz = clamp(0.5 + 0.3 * sin(dot(q, vec2(2.3, 1.1)) + T * 0.6 + 2.0 * sin(q.y * 0.9)) + 0.25 * sin(dot(q, vec2(-1.3, 3.7)) - T * 0.8 + sin(q.x * 1.3)) + 0.2 * sin(dot(q, vec2(5.1, -2.9)) + T), 0.0, 1.0);   // non-grid noise (a product of sines made a checkerboard)
   float foam = (1.0 - smoothstep(lap * 0.35, lap + 0.1, vDep)) * smoothstep(0.0, 0.03, vDep) * (0.55 + 0.45 * nz);
+  foam = max(foam, wfoamL * (0.4 + 0.6 * nz));
   foam = max(foam, smoothstep(0.88, 0.995, 0.5 + 0.5 * sin(sa * 1.15 + 2.2 * sin(sb * 0.22 - W * 0.9))) * smoothstep(0.3, 1.0, w01) * (0.25 + 0.75 * nz) * 0.6 * (0.35 + gustW));   // windrows
   foam = max(foam, smoothstep(0.7, 1.4, length(g)) * uWindW * 0.35 * nz * (1.0 - 0.75 * uStorm));
   foam = max(foam, uSea * smoothstep(0.9 - 0.2 * uStorm, 1.2 - 0.15 * uStorm, vH + 0.12 * nz * uWindW) * 0.8 * (0.5 + 0.5 * nz));   // whitecaps on the biggest crests
@@ -334,25 +339,28 @@ function makeLeaves(b) {
   const names = b.scatter.map(x => x.m).join(' '), blossom = /blossom/.test(names), autumn = /autumn|gold|maple/.test(names + b.id) || /harvest/.test(b.id), snowy = (b.ground.snow || 0) > 0.5;
   const pal = (blossom ? [0xffd3e2, 0xffc0d4, 0xfff0f5] : autumn ? [0xd98a2b, 0xb5541f, 0xe8b84a, 0x9c3d1e] : [0x7fa64a, 0x9bbf5a, 0x6e9a3e]).map(c => new THREE.Color(c)), N = snowy ? 0 : blossom ? 150 : 120, sz = blossom ? 0.055 : 0.09;
   const geo = new THREE.PlaneGeometry(sz, sz * (blossom ? 1 : 0.65)), mat = new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }), mesh = new THREE.InstancedMesh(geo, mat, Math.max(1, N)); mesh.frustumCulled = false; mesh.count = 0; mesh.castShadow = false;
-  const P = new Float32Array(N * 3), PH = new Float32Array(N), SP = new Float32Array(N * 3), dm = new THREE.Object3D(); for (let i = 0; i < N; i++) { mesh.setColorAt(i, pal[i % pal.length]); PH[i] = Math.random() * 6.28; SP[i * 3] = (Math.random() - 0.5) * 6; SP[i * 3 + 1] = (Math.random() - 0.5) * 6; SP[i * 3 + 2] = (Math.random() - 0.5) * 6; P[i * 3 + 1] = -99; }
+  const FL = new Uint8Array(N), P = new Float32Array(N * 3), PH = new Float32Array(N), SP = new Float32Array(N * 3), dm = new THREE.Object3D(); for (let i = 0; i < N; i++) { mesh.setColorAt(i, pal[i % pal.length]); PH[i] = Math.random() * 6.28; SP[i * 3] = (Math.random() - 0.5) * 6; SP[i * 3 + 1] = (Math.random() - 0.5) * 6; SP[i * 3 + 2] = (Math.random() - 0.5) * 6; P[i * 3 + 1] = -99; }
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  const spawn = (i, tg) => { const wd = windDirNow, side = (Math.random() - 0.5) * 30, up = 10 + Math.random() * 8, x = tg.x - wd.x * up - wd.y * side, z = tg.z - wd.y * up + wd.x * side; P[i * 3] = x; P[i * 3 + 2] = z; P[i * 3 + 1] = Math.max(0, S.H(x, z)) + 0.3 + Math.random() * 5; };
+  const spawn = (i, tg) => { if (S.hasWater && i % 3 === 0) { for (let k = 0; k < 14; k++) { const a = Math.random() * 6.283, r = 3 + Math.random() * 12, x = tg.x + Math.cos(a) * r, z = tg.z + Math.sin(a) * r; if (S.H(x, z) < -0.15) { P[i * 3] = x; P[i * 3 + 2] = z; P[i * 3 + 1] = 0.035; FL[i] = 1; return; } } } FL[i] = 0; const wd = windDirNow, side = (Math.random() - 0.5) * 30, up = 10 + Math.random() * 8, x = tg.x - wd.x * up - wd.y * side, z = tg.z - wd.y * up + wd.x * side; P[i * 3] = x; P[i * 3 + 2] = z; P[i * 3 + 1] = Math.max(0, S.H(x, z)) + 0.3 + Math.random() * 5; };
   return { mesh, update(dt, t, wE, tg) {
     const n = Math.floor(N * Math.min(1, Math.max(0, (wE - 0.12) / 0.7))); mesh.count = n; if (!n) return; const wd = windDirNow;
     for (let i = 0; i < n; i++) { let x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
       if (y < -50 || Math.hypot(x - tg.x, z - tg.z) > 18) { spawn(i, tg); x = P[i * 3]; y = P[i * 3 + 1]; z = P[i * 3 + 2]; }
-      const gu = gustJS(x, z, t), sp = (0.9 + 5.5 * wE) * (0.35 + 1.1 * gu), ph = PH[i] + t * 2.4;
-      x += (wd.x * sp - wd.y * Math.sin(ph) * 0.5) * dt; z += (wd.y * sp + wd.x * Math.sin(ph) * 0.5) * dt; y += (-0.3 + Math.cos(ph * 0.8) * 0.45 * wE + gu * wE * 1.2) * dt;
-      const g0 = Math.max(0, S.H(x, z)) + 0.04; if (y < g0) { y = g0 + 4 + Math.random() * 3; spawn(i, tg); x = P[i * 3]; z = P[i * 3 + 2]; y = P[i * 3 + 1]; }
-      P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; dm.position.set(x, y, z); dm.rotation.set(ph * SP[i * 3] * 0.5, ph * SP[i * 3 + 1] * 0.5, ph * SP[i * 3 + 2] * 0.5); dm.updateMatrix(); mesh.setMatrixAt(i, dm.matrix); }
+      const gu = gustJS(x, z, t), sp = (0.9 + 5.5 * wE) * (0.35 + 1.1 * gu) * (FL[i] ? 0.22 : 1), ph = PH[i] + t * 2.4;
+      x += (wd.x * sp - wd.y * Math.sin(ph) * 0.5) * dt; z += (wd.y * sp + wd.x * Math.sin(ph) * 0.5) * dt; if (FL[i]) y = 0.035 + 0.02 * Math.sin(ph * 0.7); else y += (-0.3 + Math.cos(ph * 0.8) * 0.45 * wE + gu * wE * 1.2) * dt;
+      const hh = S.H(x, z), onW = S.hasWater && hh < -0.05, g0 = Math.max(0, hh) + 0.04;
+      if (y < g0) { if (onW) { y = 0.035; FL[i] = 1; } else { y = g0 + 4 + Math.random() * 3; spawn(i, tg); x = P[i * 3]; z = P[i * 3 + 2]; y = P[i * 3 + 1]; FL[i] = 0; } }
+      if (FL[i] && !onW) { FL[i] = 0; spawn(i, tg); x = P[i * 3]; z = P[i * 3 + 2]; y = P[i * 3 + 1]; }   // reached the shore: blow in again
+      P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; dm.position.set(x, y, z); dm.scale.setScalar(FL[i] ? 1.9 : 1); if (FL[i]) dm.rotation.set(-Math.PI / 2 + Math.sin(ph) * 0.12, 0, SP[i * 3] + Math.sin(ph * 0.5) * 0.2); else dm.rotation.set(ph * SP[i * 3] * 0.5, ph * SP[i * 3 + 1] * 0.5, ph * SP[i * 3 + 2] * 0.5); dm.updateMatrix(); mesh.setMatrixAt(i, dm.matrix); }
     mesh.instanceMatrix.needsUpdate = true; } };
 }
 function windTick(dt, wE) {
   const a = 0.6 + 0.22 * Math.sin(S.t * 0.05) + 0.1 * Math.sin(S.t * 0.13); WU.uWT.value += dt * (0.45 + 1.1 * Math.min(1.5, wE)); windDirNow.set(Math.cos(a), Math.sin(a)); uWindDir.value.copy(windDirNow); WU.uWDir.value.copy(windDirNow);
   if (S.leaves) S.leaves.update(dt, S.t, wE, S.target);
+  { const ar = $('windarrow'); if (ar) { const sy = Math.sin(S.yaw), cy = Math.cos(S.yaw), sx = windDirNow.x * cy - windDirNow.y * sy, up = -windDirNow.x * sy - windDirNow.y * cy; ar.style.transform = `rotate(${(Math.atan2(-up, sx) * 180 / Math.PI).toFixed(0)}deg)`; ar.style.opacity = 0.35 + 0.65 * Math.min(1, wE); } }   // the arrow points the way the wind blows, as seen from the camera
   if (AU.wind) AU.wind.gain.value += ((AU.muted ? 0 : 0.11 * Math.max(0, wE - 0.2) / 0.8 * (0.5 + 1.0 * gustJS(S.target.x, S.target.z, S.t))) - AU.wind.gain.value) * Math.min(1, dt * 3);
 }
-function setWind(v) { S.windUser = v; const sl = $('wind'); if (sl && v != null) sl.value = v; const bt = $('windbtn'); if (bt) bt.textContent = v == null ? '🍃' : '🍃 ' + (v < 0.4 ? '1' : v < 0.7 ? '2' : v < 0.9 ? '3' : '4') + '/4'; document.body.classList.toggle('windy', v != null); }
+function setWind(v) { S.windUser = v; const sl = $('wind'); if (sl && v != null) sl.value = v; const bt = $('windbtn'); if (bt) bt.firstChild.textContent = v == null ? '🍃 ' : '🍃 ' + (v < 0.4 ? '1' : v < 0.7 ? '2' : v < 0.9 ? '3' : '4') + '/4 '; document.body.classList.toggle('windy', v != null); }
 // ---------- thunderstorm (polish v1) ----------
 // Intensity 0.2 .. 1 (S.stormI). Lightning bolts at random in front of the camera with a flickering flash that lights the whole scene, then thunder
 // (synthesised with Web Audio, no files): a sharp crack when the strike is close, a long rolling rumble that arrives later the farther away it is.
