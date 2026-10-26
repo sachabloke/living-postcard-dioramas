@@ -20,7 +20,7 @@ const WEATHERS = {
   snow: { cloud: 0.65, fog: 0.25, rain: 0, wet: 0, wind: 0.3, storm: 0, snow: 0.9, dust: 0 },
   storm: { cloud: 1, fog: 0.26, rain: 0.8, wet: 1, wind: 0.82, storm: 0.7, snow: 0, dust: 0 },   // polish v1: thunderstorm; intensity (0.2 .. 1) rescales these, see stormCh
 };
-const stormCh = (I) => ({ cloud: 1, fog: 0.12 + 0.25 * I, rain: 0.45 + 0.55 * I, wet: 1, wind: 0.55 + 0.45 * I, storm: I, snow: 0, dust: 0 });
+const stormCh = (I) => ({ cloud: 1, fog: 0.04 + 0.1 * I, rain: 0.45 + 0.55 * I, wet: 1, wind: 0.55 + 0.45 * I, storm: I, snow: 0, dust: 0 });
 const WATER_STYLES = ['river', 'lake', 'sea', 'marsh'];
 
 // ---------- renderer / scene ----------
@@ -184,7 +184,7 @@ function buildWater(b, H) {
   vec4 rc = uTexMat * vec4(vWP, 1.0); vec3 refl = texture2D(uRefl, rc.xy / rc.w + g * 0.035 * (0.4 + 0.6 * V.y)).rgb;
   float rk = uReflAmt * (0.22 + 0.7 * fr) * (1.0 - 0.4 * uSea) * (1.0 - 0.35 * uStorm) * (0.5 + 0.5 * clamp(diffuseColor.a * 1.6, 0.0, 1.0)); outgoingLight = mix(outgoingLight, refl, rk);
   outgoingLight = mix(outgoingLight, uSky, fr * 0.7 * (1.0 - uReflAmt * 0.6) * (1.0 - 0.5 * uSea));
-  outgoingLight *= 1.0 - 0.45 * uStorm * uSea;   // storm sea goes dark slate under the cloud
+  outgoingLight *= 1.0 - 0.6 * uStorm * uSea;   // storm sea goes dark slate under the cloud
   // sun glitter: reflected sun direction against the wave normals (broad sheen + sharp sparkle)
   vec3 Rv = reflect(-normalize(uSunDir), N); float sd = max(dot(Rv, V), 0.0);
   outgoingLight += uSun * (pow(sd, 60.0) * 0.5 + pow(sd, 600.0) * 3.0) * uGlint * uWFx;
@@ -192,8 +192,8 @@ function buildWater(b, H) {
   // shore foam: a lapping band where the water is shallow, broken up by noise, plus foam streaks on windy crests
   float lap = (0.12 + 0.08 * sin(T * 0.9 + q.x * 0.6 + q.y * 0.4)) * (1.0 + uSea * (2.5 + 2.0 * sin(T * 0.75 + q.x * 0.25 + q.y * 0.18))), nz = clamp(0.5 + 0.3 * sin(dot(q, vec2(2.3, 1.1)) + T * 0.6 + 2.0 * sin(q.y * 0.9)) + 0.25 * sin(dot(q, vec2(-1.3, 3.7)) - T * 0.8 + sin(q.x * 1.3)) + 0.2 * sin(dot(q, vec2(5.1, -2.9)) + T), 0.0, 1.0);   // non-grid noise (a product of sines made a checkerboard)
   float foam = (1.0 - smoothstep(lap * 0.35, lap + 0.1, vDep)) * smoothstep(0.0, 0.03, vDep) * (0.55 + 0.45 * nz);
-  foam = max(foam, smoothstep(0.62, 0.95, length(g)) * uWindW * 0.35 * nz);
-  foam = max(foam, uSea * smoothstep(0.78 - 0.3 * uStorm, 1.05 - 0.25 * uStorm, vH + 0.12 * nz * uWindW) * 0.8 * (0.5 + 0.5 * nz));   // whitecaps on the biggest crests
+  foam = max(foam, smoothstep(0.7, 1.4, length(g)) * uWindW * 0.35 * nz * (1.0 - 0.75 * uStorm));
+  foam = max(foam, uSea * smoothstep(0.9 - 0.2 * uStorm, 1.2 - 0.15 * uStorm, vH + 0.12 * nz * uWindW) * 0.8 * (0.5 + 0.5 * nz));   // whitecaps on the biggest crests
   if (uSurf > 0.5) { float sn = surfS(vDist, T); float crest = smoothstep(0.72, 0.96, sn) * smoothstep(2.0, 0.9, vDep) * smoothstep(0.05, 0.3, vDep);   // the wave breaks: a white lip along the crest, then a turbulent wash behind it that thins as it runs up the sand
     float outerCap = smoothstep(0.86 - 0.1 * uStorm, 0.98, sn) * smoothstep(34.0, 8.0, vDist) * smoothstep(1.6, 2.6, vDep) * (0.3 + 0.4 * uStorm) * nz; foam = max(foam, outerCap);
     float wash = smoothstep(1.0, 0.12, vDep) * (0.18 + 0.45 * smoothstep(0.25, 0.85, sn)) * (0.4 + 0.6 * nz) * smoothstep(0.0, 0.05, vDep); foam = max(foam, max(crest * (0.65 + 0.35 * nz), wash)); }
@@ -346,7 +346,7 @@ function tick(dt) {
   if (!S.ready) return; S.t += dt; uTime.value = S.t; step(dt);
   const ch = S.wch, fl = stormTick(dt), a = withWeather(atmosphere(S.tod), ch, fl), night = a.night;
   sun.color.setRGB(...a.lightColor); sun.intensity = a.lightIntensity; hemi.color.setRGB(...a.hemiSky); hemi.groundColor.setRGB(...a.hemiGround); hemi.intensity = a.hemiIntensity * (1.2 + 0.8 * night);
-  const L = a.lightDir; sun.position.set(L[0] * 70, Math.max(L[1], 0.08) * 70, L[2] * 70); sun.castShadow = L[1] > 0.02 && ch.fog < 0.9; scene.fog.color.setRGB(...a.fogColor); scene.fog.near = a.fogNear * QT.nearK[Q.near]; scene.fog.far = Math.min(a.fogFar * 0.8, QT.far[Q.far]); renderer.toneMappingExposure = a.exposure * (1 - 0.3 * ch.storm);
+  const L = a.lightDir; sun.position.set(L[0] * 70, Math.max(L[1], 0.08) * 70, L[2] * 70); sun.castShadow = L[1] > 0.02 && ch.fog < 0.9; scene.fog.color.setRGB(...a.fogColor); scene.fog.near = a.fogNear * QT.nearK[Q.near] * (1 + 1.2 * ch.storm); scene.fog.far = Math.min(a.fogFar * 0.8 * (1 + 1.0 * ch.storm), QT.far[Q.far] * (1 + 0.8 * ch.storm));   // polish v1: a storm darkens the picture but no longer swallows the distance renderer.toneMappingExposure = a.exposure * (1 - 0.3 * ch.storm);
   const su = sky.material.uniforms; { const fg = Math.min(1, ch.fog * 3 + ch.rain * 0.3), fz = Math.min(1, ch.fog * 4); su.zen.value.setRGB(...a.sky.zenith).lerp(scene.fog.color, fz); su.hor.value.setRGB(...a.sky.horizon).lerp(scene.fog.color, fg); if (fl > 0.02) { su.zen.value.lerp(new THREE.Color(0.85, 0.9, 1), Math.min(0.8, fl * 0.7)); su.hor.value.lerp(new THREE.Color(0.9, 0.93, 1), Math.min(0.8, fl * 0.7)); } } su.sunDir.value.set(...a.sunDir); su.sunCol.value.setRGB(...a.lightColor); su.moonDir.value.set(...a.moonDir); su.night.value = a.night; su.cloud.value = QT.cloud[Q.far] * Math.min(1, ch.cloud + ch.rain * 0.4) * (1 - Math.min(0.9, ch.fog * 1.5)); su.grey.value.setRGB(...a.fogColor).lerp(su.hor.value, 0.65).multiplyScalar(1.15); sky.position.copy(camera.position);
   uWind.value = 1 + 1.4 * ch.wind + 1.4 * ch.storm; rain.uniforms.uTime.value = S.t; rain.uniforms.uGround.value = -1.5; rain.setAmount(ch.rain); rain.uniforms.uColor.value.setRGB(...(night > 0.5 ? [0.45, 0.55, 0.75] : [0.74, 0.81, 0.9]));
   snowfall.userData.update(S.t, dt, ch.snow, S.target);
