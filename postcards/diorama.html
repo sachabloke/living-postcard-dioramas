@@ -27,6 +27,8 @@
   #stick i { position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%; background:rgba(255,255,255,.5); }
   body.walking #stick { display:block; }
   #walkbtn { position:fixed; right:10px; top:58px; z-index:5; opacity:.55; } body.clean #walkbtn { opacity:.3; } body.walking #walkbtn { opacity:.9; background:var(--paper); color:var(--ink); }
+  #stormbtn { position:fixed; right:10px; top:106px; z-index:5; opacity:.55; } #sndbtn { position:fixed; right:10px; top:154px; z-index:5; opacity:.55; display:none; } body.stormy #sndbtn { display:block; } body.stormy #stormbtn { opacity:.95; background:#d8e4ff; color:#14202e; } body.clean #stormbtn { opacity:.3; } body.stormy.clean #stormbtn { opacity:.8; }
+  #flash { position:fixed; inset:0; background:#eef2ff; opacity:0; pointer-events:none; z-index:3; mix-blend-mode:screen; } #stormlab { display:none; } body.stormy #stormlab { display:inline; }
   @media (max-width:640px) { #cap { bottom:128px; } }
 </style>
 </head>
@@ -36,10 +38,10 @@
 <div id="cap"></div>
 <div id="bar">
   <span id="clock"></span><input id="time" type="range" min="0" max="1" step="0.005" value="0.5" aria-label="Time of day">
-  <span id="wx"><button data-w="default">Its own</button><button data-w="clear">Clear</button><button data-w="cloudy">Cloudy</button><button data-w="fog">Fog</button><button data-w="rain">Rain</button><button data-w="snow">Snow</button></span>
-  <label><input id="spin" type="checkbox" checked> turn</label><button id="save">Save postcard</button>
+  <span id="wx"><button data-w="default">Its own</button><button data-w="clear">Clear</button><button data-w="cloudy">Cloudy</button><button data-w="fog">Fog</button><button data-w="rain">Rain</button><button data-w="snow">Snow</button><button data-w="storm">Storm</button></span>
+  <label id="stormlab">⚡ <input id="storm" type="range" min="0.2" max="1" step="0.05" value="0.7" aria-label="Storm intensity"></label> <label><input id="spin" type="checkbox" checked> turn</label><button id="save">Save postcard</button>
 </div>
-<button id="uibtn" aria-label="Show or hide the menus">☰</button><button id="walkbtn">Walk</button><div id="stick"><i></i></div>
+<button id="uibtn" aria-label="Show or hide the menus">☰</button><button id="walkbtn">Walk</button><button id="stormbtn" aria-label="Thunderstorm, tap to raise the intensity">⚡</button><button id="sndbtn" aria-label="Storm sound">🔊</button><div id="flash"></div><div id="stick"><i></i></div>
 <div id="loading">Loading the postcard…</div>
 <script type="module" src="./diorama.js"></script>
 </body>
