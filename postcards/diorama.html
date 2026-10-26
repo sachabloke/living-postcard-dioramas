@@ -19,6 +19,14 @@
   #wx { display:flex; gap:4px; } #bar input[type=range] { width:150px; } #clock { min-width:96px; font-variant-numeric:tabular-nums; }
   #loading { position:fixed; inset:0; display:grid; place-items:center; background:rgba(16,22,26,.7); font-size:18px; }
   #set { position:fixed; right:14px; bottom:84px; width:260px; background:rgba(20,28,24,.86); backdrop-filter:blur(8px); padding:12px 14px; border-radius:10px; display:grid; gap:8px; font-size:13px; } #set[hidden] { display:none; } #set label { display:flex; justify-content:space-between; align-items:center; gap:8px; } #set select { background:#f6efe0; color:#2b2a22; border:0; border-radius:6px; padding:3px 6px; } #set div { display:flex; gap:6px; flex-wrap:wrap; } #set small { color:#aab8ad; font-size:11.5px; }
+  /* polish v1: clean view + walking */
+  body.clean #tabs, body.clean #cap, body.clean #bar, body.clean #set { display:none !important; }
+  #uibtn { position:fixed; top:10px; right:10px; z-index:5; width:40px; height:40px; padding:0; font-size:18px; display:grid; place-items:center; opacity:.55; }
+  body.clean #uibtn { opacity:.3; }
+  #stick { position:fixed; left:22px; bottom:34px; width:132px; height:132px; border-radius:50%; background:rgba(20,28,24,.28); border:2px solid rgba(255,255,255,.35); touch-action:none; display:none; z-index:4; }
+  #stick i { position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%; background:rgba(255,255,255,.5); }
+  body.walking #stick { display:block; }
+  #walkbtn { position:fixed; right:10px; top:58px; z-index:5; opacity:.55; } body.clean #walkbtn { opacity:.3; } body.walking #walkbtn { opacity:.9; background:var(--paper); color:var(--ink); }
   @media (max-width:640px) { #cap { bottom:128px; } }
 </style>
 </head>
@@ -31,6 +39,7 @@
   <span id="wx"><button data-w="default">Its own</button><button data-w="clear">Clear</button><button data-w="cloudy">Cloudy</button><button data-w="fog">Fog</button><button data-w="rain">Rain</button><button data-w="snow">Snow</button></span>
   <label><input id="spin" type="checkbox" checked> turn</label><button id="save">Save postcard</button>
 </div>
+<button id="uibtn" aria-label="Show or hide the menus">☰</button><button id="walkbtn">Walk</button><div id="stick"><i></i></div>
 <div id="loading">Loading the postcard…</div>
 <script type="module" src="./diorama.js"></script>
 </body>

@@ -303,7 +303,23 @@ function tick(dt) {
   $('clock').textContent = `${String(Math.floor(S.tod * 24)).padStart(2, '0')}:${String(Math.floor(S.tod * 24 * 60) % 60).padStart(2, '0')} · ${phaseName(S.tod)}`;
 }
 const tip = new THREE.Vector3();
+// polish v1: walking. Left stick / WASD moves the character relative to the camera, dragging the picture turns the view; the camera follows.
+const WK = { on: false, jx: 0, jy: 0, keys: {}, face: 0, v: 0 };
+function setWalk(on) { WK.on = on; document.body.classList.toggle('walking', on); if (on) { S.spin = false; $('spin').checked = false; S.avatar.userData.stopWork && S.avatar.userData.stopWork(); WK.face = S.avatar.rotation.y; S.dist = Math.min(S.dist, 6); S.pitch = Math.min(S.pitch, 0.35); } else WK.v = 0; }
+function walkStep(dt) {
+  const k = WK.keys; let jx = WK.jx + ((k.d || k.arrowright) ? 1 : 0) - ((k.a || k.arrowleft) ? 1 : 0), jy = WK.jy + ((k.w || k.arrowup) ? 1 : 0) - ((k.s || k.arrowdown) ? 1 : 0); const m = Math.hypot(jx, jy); if (m > 1) { jx /= m; jy /= m; }
+  const sy = Math.sin(S.yaw), cy = Math.cos(S.yaw), dx = -sy * jy + cy * jx, dz = -cy * jy - sy * jx, want = Math.min(1, m) * (k.shift ? 4.2 : 2.7), av = S.avatar; WK.v += (want - WK.v) * Math.min(1, dt * 8);
+  if (m > 0.05) { let nx = av.position.x + dx / m * WK.v * dt, nz = av.position.z + dz / m * WK.v * dt;
+    // stay on the island, out of deep water, and slide around trees, rocks and props
+    const r = Math.hypot(nx, nz); if (r > R - 3) { nx *= (R - 3) / r; nz *= (R - 3) / r; } if (S.hasWater && S.H(nx, nz) < -0.3) { nx = av.position.x; nz = av.position.z; }
+    for (const p of S.placed) { if (p.obj === av) continue; const rad = p.info.base.r * p.s, tall = p.info.size[1] * p.s; if (rad < 0.12 || tall < 0.35) continue; const ex = nx - p.x, ez = nz - p.z, d = Math.hypot(ex, ez), lim = rad * 0.85 + 0.3; if (d < lim && d > 1e-4) { nx = p.x + ex / d * lim; nz = p.z + ez / d * lim; } }
+    av.position.x = nx; av.position.z = nz; const ft = Math.atan2(dx, dz); let dA = ft - WK.face; dA = Math.atan2(Math.sin(dA), Math.cos(dA)); WK.face += dA * Math.min(1, dt * 10); av.rotation.y = WK.face; }
+  av.position.y += (S.H(av.position.x, av.position.z) - av.position.y) * Math.min(1, dt * 14);
+  S.target.x += (av.position.x - S.target.x) * Math.min(1, dt * 6); S.target.z += (av.position.z - S.target.z) * Math.min(1, dt * 6); S.target.y += (av.position.y + 0.9 - S.target.y) * Math.min(1, dt * 6);
+  av.userData.animate(0, S.t, dt, { speed: WK.v, moving: WK.v > 0.1 });
+}
 function step(dt) {
+  if (WK.on) { walkStep(dt); for (const m of S.mixers) m.update(dt); return; }
   S.avatar.userData.animate(0, S.t, dt, { speed: 0 }); for (const m of S.mixers) m.update(dt);
   if (S.fx && S.rod) { S.rod.getWorldPosition(tip); S.rod.userData.tip.getWorldPosition(tip); if (!S.fx.bobbed) { const c = S.castFrom, ba = Math.PI / 2 - c.face, tg = castTarget(c.cx, c.cz, ba, (x, z) => (S.H(x, z) < -0.3 ? 1 : 0), { min: 2.5, max: 7 }); S.fx.cast(tip, tg.x, tg.z, 0.01); S.fx.bobbed = true; } S.fx.update(dt, tip); }
 }
@@ -319,7 +335,12 @@ $('time').oninput = e => { S.tod = +e.target.value; }; $('spin').onchange = e =>
 $('save').onclick = () => { renderer.render(scene, camera); const src = renderer.domElement, c = document.createElement('canvas'), W = src.width, Hh = src.height, band = Math.round(Hh * 0.1); c.width = W; c.height = Hh + band; const x = c.getContext('2d'); x.fillStyle = '#f6efe0'; x.fillRect(0, 0, W, c.height); x.drawImage(src, 0, 0);
   x.fillStyle = '#2b2a22'; x.font = `italic 700 ${Math.round(band * 0.45)}px Georgia, serif`; x.fillText(S.b.title, band * 0.3, Hh + band * 0.62); x.font = `${Math.round(band * 0.24)}px system-ui, sans-serif`; x.fillStyle = '#6a6556'; x.fillText(S.b.place, band * 0.3, Hh + band * 0.88);
   c.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = `postcard-${S.b.id}.png`; a.click(); }); };
-window.__pc = { placedOf: () => S.placed, S, show, tick, scene, camera, renderer, BIOMES, MODELS, size };
+addEventListener('keydown', e => { WK.keys[e.key.toLowerCase()] = true; if (e.key === 'Shift') WK.keys.shift = true; if (e.key.toLowerCase() === 'e') setWalk(!WK.on); }); addEventListener('keyup', e => { WK.keys[e.key.toLowerCase()] = false; if (e.key === 'Shift') WK.keys.shift = false; });
+{ const st = $('stick'), kn = st.firstElementChild; let id = null; const mv = e => { const r = st.getBoundingClientRect(), R0 = r.width / 2; let x = (e.clientX - r.left - R0) / R0, y = (e.clientY - r.top - R0) / R0; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; } WK.jx = x; WK.jy = -y; kn.style.transform = `translate(${x * R0 * 0.6}px, ${y * R0 * 0.6}px)`; };
+  st.addEventListener('pointerdown', e => { id = e.pointerId; st.setPointerCapture(id); mv(e); e.preventDefault(); }); st.addEventListener('pointermove', e => { if (e.pointerId === id) mv(e); }); const end = e => { if (e.pointerId !== id) return; id = null; WK.jx = WK.jy = 0; kn.style.transform = ''; }; st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end); }
+$('walkbtn').onclick = () => setWalk(!WK.on); $('uibtn').onclick = () => document.body.classList.toggle('clean');
+{ const qq = new URLSearchParams(location.search); if (qq.get('ui') === '1') document.body.classList.remove('clean'); else if (qq.get('clean') === '1' || matchMedia('(max-width: 700px), (pointer: coarse)').matches) document.body.classList.add('clean'); if (qq.get('walk') === '1') { const t = setInterval(() => { if (S.ready) { setWalk(true); clearInterval(t); } }, 200); } }
+window.__pc = { setWalk, WK, placedOf: () => S.placed, S, show, tick, scene, camera, renderer, BIOMES, MODELS, size };
 const q = new URLSearchParams(location.search);
 show(q.get('b') || 'river', { wx: q.get('w') || undefined, tod: q.has('t') ? +q.get('t') : undefined }).then(() => { if (q.has('still')) S.spin = false; });
 requestAnimationFrame(frame);
