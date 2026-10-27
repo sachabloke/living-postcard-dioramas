@@ -92,16 +92,16 @@ export function makeTerrainChunk(tx, tz, material) {
 
 export function makeSky() {
   const mat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { zen: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: new THREE.Color() }, moonDir: { value: new THREE.Vector3() }, night: { value: 0 }, uTime, cloud: { value: 0 }, grey: { value: new THREE.Color(0.6, 0.64, 0.7) } },
+    uniforms: { zen: { value: new THREE.Color() }, hor: { value: new THREE.Color() }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: new THREE.Color() }, moonDir: { value: new THREE.Vector3() }, night: { value: 0 }, moon: { value: 0.5 }, uTime, cloud: { value: 0 }, grey: { value: new THREE.Color(0.6, 0.64, 0.7) } },
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); gl_Position.z = gl_Position.w; }',
-    fragmentShader: `varying vec3 vD; uniform vec3 zen,hor,sunDir,sunCol,moonDir,grey; uniform float night,uTime,cloud;
+    fragmentShader: `varying vec3 vD; uniform vec3 zen,hor,sunDir,sunCol,moonDir,grey; uniform float night,moon,uTime,cloud;
       float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); float a=fract(sin(dot(i,vec2(127.1,311.7)))*43758.5), b=fract(sin(dot(i+vec2(1,0),vec2(127.1,311.7)))*43758.5), c=fract(sin(dot(i+vec2(0,1),vec2(127.1,311.7)))*43758.5), d=fract(sin(dot(i+vec2(1,1),vec2(127.1,311.7)))*43758.5); return mix(mix(a,b,f.x),mix(c,d,f.x),f.y); }
       float h(vec3 p){ return fract(sin(dot(p, vec3(12.9898,78.233,37.719)))*43758.5453); }
       void main(){ vec3 d = normalize(vD); float y = max(d.y, 0.0);
         vec3 c = mix(hor, zen, pow(y, 0.55));
         float sd = max(dot(d, sunDir), 0.0);
         c += sunCol * (pow(sd, 700.0) * 3.0 + pow(sd, 18.0) * 0.35 + pow(sd, 4.0) * 0.12 * (1.0 - y));
-        float md = max(dot(d, moonDir), 0.0); c += vec3(0.85,0.9,1.0) * pow(md, 1500.0) * 1.6 * night + vec3(0.3,0.4,0.6) * pow(md, 40.0) * 0.2 * night;
+        float md = max(dot(d, moonDir), 0.0); float mk = 0.5 + 1.0 * moon; c += vec3(0.85,0.9,1.0) * pow(md, 1500.0) * 1.6 * night * mk + vec3(0.3,0.4,0.6) * pow(md, 40.0) * 0.2 * night * mk + vec3(0.5,0.6,0.8) * pow(md, 8.0) * 0.12 * night * max(0.0, moon - 0.5) * 2.0;   // polish v1: moon disc, halo and wide glow scale with the moon slider
         vec3 sp = floor(d * 160.0); float st = step(0.9975, h(sp)) * smoothstep(0.1, 0.5, d.y) * night; c += vec3(st) * (0.6 + 0.4 * sin(uTime * 2.0 + h(sp) * 30.0));
         { vec2 cp = d.xz / (max(d.y, 0.04) + 0.25) * 1.3 + vec2(uTime * 0.012, uTime * 0.006); float cl = vn(cp*2.) * .55 + vn(cp*4.3) * .3 + vn(cp*9.1) * .15;
           float cov = smoothstep(.62 - cloud * .38, .85 - cloud * .38, cl) * smoothstep(0., .18, d.y) * (0.35 + 0.65 * cloud + 0.2); float lit = clamp(0.55 + 0.5 * dot(normalize(vec3(sunDir.x,.3,sunDir.z)), normalize(vec3(d.x,.3,d.z))), 0., 1.);
